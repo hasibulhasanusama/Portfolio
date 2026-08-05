@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Royal Gothic Mansion Gallery</title>
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;800;900&family=Plus+Jakarta+Sans:wght@300;400;600;700&display=swap" rel="stylesheet">
+    
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+    <!-- External CSS -->
+    <link rel="stylesheet" href="style.css">
+
+    <!-- External Libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+</head>
+<body>
+
+    <div id="webgl-container"></div>
+    <div id="door-tooltip">Door Info</div>
+    <div id="toast-notification"><i class="fa-solid fa-crown"></i> <span id="toast-message">Notification</span></div>
+
+    <header>
+        <div class="brand-logo">
+            <i class="fa-solid fa-chess-king"></i> PORTFOLIO 
+        </div>
+        <div class="nav-controls">
+            <button class="nav-btn" onclick="moveCameraTo('101')">101</button>
+            <button class="nav-btn" onclick="moveCameraTo('102')">102</button>
+            <button class="nav-btn" onclick="moveCameraTo('103')">103</button>
+            <button class="nav-btn" onclick="moveCameraTo('104')">104</button>
+            <button class="nav-btn" onclick="moveCameraTo('105')">105</button>
+            <button class="nav-btn" onclick="moveCameraTo('106')">106</button>
+            <button class="nav-btn" onclick="moveCameraTo('profile')"><i class="fa-solid fa-user-shield"></i> Profile</button>
+            <button class="nav-btn active" onclick="moveCameraTo('center')"><i class="fa-solid fa-eye"></i> View All</button>
+        </div>
+    </header>
+
+    <div class="hud-instruction">
+        <i class="fa-solid fa-keyboard"></i> Move: <b>WASD / Arrow Keys</b> • Look & Zoom: <b>Mouse</b>
+    </div>
+
+    <div class="modal-overlay" id="contentModal">
+        <div class="modal-card">
+            <button class="close-btn" onclick="closeModal()"><i class="fa-solid fa-xmark"></i></button>
+            <div class="modal-header">
+                <span class="modal-door-tag" id="modalDoorTag">CHAMBER 101</span>
+                <h2 class="modal-title" id="modalTitle">Section Overview</h2>
+            </div>
+            <div class="modal-body" id="modalBody"></div>
+        </div>
+    </div>
+
+    <!-- External JavaScript -->
+    <script src="script.js"></script>
+</body>
+</html>
