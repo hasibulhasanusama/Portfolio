@@ -50,7 +50,6 @@ const AudioEngine = {
 
 /* DATA STORE */
 let isAdminMode = false;
-
 let activeOpenDoor = null;
 
 const PORTFOLIO_DATA = {
@@ -111,6 +110,31 @@ const PORTFOLIO_DATA = {
     }
 };
 
+/* THREE.JS SCENE SETUP */
+const container = document.getElementById('webgl-container');
+const scene = new THREE.Scene();
+
+scene.background = new THREE.Color(0x1a120c);
+scene.fog = new THREE.FogExp2();
+
+const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
+const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 0.9; 
+container.appendChild(renderer.domElement);
+
+const controls = new THREE.OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true;
+controls.dampingFactor = 0.05;
+controls.maxPolarAngle = Math.PI / 2 - 0.02; 
+controls.minDistance = 1.0;                 
+controls.maxDistance = 25.0;                
+controls.enablePan = true;  
+
 /* TEXTURE GENERATORS */
 function createRoyalMarbleTexture() {
     const canvas = document.createElement('canvas');
@@ -151,67 +175,79 @@ function createRoyalMarbleTexture() {
 
 function createDoorPlateCanvas(num, text) {
     const canvas = document.createElement('canvas');
-    canvas.width = 512; canvas.height = 256;
+    canvas.width = 1024; 
+    canvas.height = 512;
     const ctx = canvas.getContext('2d');
 
-    const grad = ctx.createLinearGradient(0, 0, 512, 256);
+    const grad = ctx.createLinearGradient(0, 0, 1024, 512);
     grad.addColorStop(0, '#d4af37');
     grad.addColorStop(0.5, '#7a5c12');
     grad.addColorStop(1, '#3a2703');
     ctx.fillStyle = grad;
-    ctx.fillRect(0, 0, 512, 256);
+    ctx.fillRect(0, 0, 1024, 512);
 
     ctx.strokeStyle = '#0a0502';
-    ctx.lineWidth = 14;
-    ctx.strokeRect(10, 10, 492, 236);
+    ctx.lineWidth = 28;
+    ctx.strokeRect(20, 20, 984, 472);
 
     ctx.fillStyle = '#080402';
-    ctx.font = '900 75px "Cinzel", serif';
+    ctx.font = '900 150px "Cinzel", serif';
     ctx.textAlign = 'center';
-    ctx.fillText(num, 256, 110);
+    ctx.fillText(num, 512, 220);
 
-    ctx.font = '700 26px "Cinzel", serif';
-    ctx.fillText(text.toUpperCase(), 256, 185);
+    ctx.font = '700 55px "Cinzel", serif';
+    ctx.fillText(text.toUpperCase(), 512, 370);
 
-    return new THREE.CanvasTexture(canvas);
+    const texture = new THREE.CanvasTexture(canvas);
+    texture.minFilter = THREE.LinearFilter;
+    texture.magFilter = THREE.LinearFilter;
+    texture.anisotropy = renderer.capabilities.getMaxAnisotropy();
+    texture.needsUpdate = true;
+
+    return texture;
 }
 
 function createProfileCanvas() {
     const canvas = document.createElement('canvas');
-    canvas.width = 768; canvas.height = 1024;
+    canvas.width = 1536;
+    canvas.height = 2048;
     const ctx = canvas.getContext('2d');
 
     ctx.fillStyle = '#090402';
-    ctx.fillRect(0, 0, 768, 1024);
+    ctx.fillRect(0, 0, 1536, 2048);
 
     ctx.strokeStyle = '#d4af37';
-    ctx.lineWidth = 16;
-    ctx.strokeRect(20, 20, 728, 984);
+    ctx.lineWidth = 32;
+    ctx.strokeRect(40, 40, 1456, 1968);
 
     ctx.fillStyle = '#d4af37';
-    ctx.font = '900 46px "Cinzel", serif';
+    ctx.font = '900 92px "Cinzel", serif';
     ctx.textAlign = 'center';
-    ctx.fillText(PORTFOLIO_DATA.profile.name, 384, 760);
+    ctx.fillText(PORTFOLIO_DATA.profile.name, 768, 1520);
 
     ctx.fillStyle = '#9e9082';
-    ctx.font = '600 24px "Plus Jakarta Sans", sans-serif';
-    ctx.fillText(PORTFOLIO_DATA.profile.title, 384, 830);
+    ctx.font = '600 48px "Plus Jakarta Sans", sans-serif';
+    ctx.fillText(PORTFOLIO_DATA.profile.title, 768, 1660);
 
     const texture = new THREE.CanvasTexture(canvas);
+    texture.minFilter = THREE.LinearFilter;
+    texture.magFilter = THREE.LinearFilter;
+    texture.anisotropy = renderer.capabilities.getMaxAnisotropy();
+
     const img = new Image();
     img.crossOrigin = "Anonymous";
     img.onload = () => {
         ctx.save();
         ctx.beginPath();
-        ctx.arc(384, 380, 220, 0, Math.PI * 2);
+        ctx.arc(768, 760, 440, 0, Math.PI * 2);
         ctx.clip();
-        ctx.drawImage(img, 164, 160, 440, 440);
+        ctx.drawImage(img, 328, 320, 880, 880);
         ctx.restore();
 
         ctx.beginPath();
-        ctx.arc(384, 380, 225, 0, Math.PI * 2);
+        ctx.arc(768, 760, 450, 0, Math.PI * 2);
         ctx.strokeStyle = '#d4af37';
-        ctx.lineWidth = 10;
+        ctx.lineWidth = 20;
         ctx.stroke();
         texture.needsUpdate = true;
     };
@@ -219,72 +255,30 @@ function createProfileCanvas() {
     return texture;
 }
 
-/* THREE.JS SCENE SETUP */
-const container = document.getElementById('webgl-container');
-const scene = new THREE.Scene();
-
-scene.background = new THREE.Color(0x1a120c);
-scene.fog = new THREE.FogExp2();
-
-const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
-const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
-renderer.setSize(window.innerWidth, window.innerHeight);
-renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-renderer.shadowMap.enabled = true;
-renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-renderer.toneMapping = THREE.ACESFilmicToneMapping;
-renderer.toneMappingExposure = 0.9; 
-container.appendChild(renderer.domElement);
-
-const controls = new THREE.OrbitControls(camera, renderer.domElement);
-controls.enableDamping = true;
-controls.dampingFactor = 0.05;
-controls.maxPolarAngle = Math.PI / 2 - 0.02; 
-controls.minDistance = 1.0;                 
-controls.maxDistance = 25.0;                
-controls.enablePan = true;  
-
-/* AMBIENT LIGHTING (VERY SOFT DARK MANSION ATMOSPHERE) */
+/* AMBIENT LIGHTING */
 const ambientLight = new THREE.AmbientLight(0xffffff, 1.0); 
 scene.add(ambientLight);
 
-// Subtle Ambient Room Fill Light
 const fillLight = new THREE.PointLight(0xd4af37, 3.0, 30);
 fillLight.position.set(0, 8, 0);
 scene.add(fillLight);
 
-/* --- MATERIALS (Revised for realistic wood and metal) --- */
-
-// --- new setup to load textures ---
-const textureLoader = new THREE.TextureLoader();
-
-// eikhane kath r texture ar chhobi load hobe. apni wood_texture.jpg namer chhobi apnar code file ar sathe folder-e rakhben.
-const woodTexture = textureLoader.load('wood_texture.jpg');
-// texture take repetition er jonno configure korte nite pari valo grain dekhanor jonno
-woodTexture.wrapS = THREE.RepeatWrapping;
-woodTexture.wrapT = THREE.RepeatWrapping;
-woodTexture.repeat.set( 1, 2 ); // repetition adjustable
-
+/* MATERIALS */
 const wallMat = new THREE.MeshStandardMaterial({ color: 0x0f0805, roughness: 0.9, metalness: 0.1 });
 const floorMat = new THREE.MeshStandardMaterial({ map: createRoyalMarbleTexture(), roughness: 0.80, metalness: 0.05});
 
-/* REALISTIC NON-GLARING WOOD DOOR MATERIAL */
-/* REALISTIC WOOD & METALLIC MATERIALS */
-// ১. রিয়েল ডার্ক উড (দরজার মূল কাঠের বডির জন্য - একদম গোল্ডেন হবে না)
 const doorWoodMat = new THREE.MeshStandardMaterial({ 
-    color: 0x2b1810,      // গাঢ় ক্লাসিক রিয়েল কাঠের রঙ (Dark Mahogany/Oak Wood)
-    roughness: 0.85,      // ম্যাট ফিনিশ (কোনো ঝলকানি থাকবে না)
-    metalness: 0.05       // মেটালনেস প্রায় শূন্য
+    color: 0x2b1810,      
+    roughness: 0.85,      
+    metalness: 0.05       
 });
 
-// ২. দরজার ফ্রেমের জন্য আরেকটু গাঢ় ব্রাউন বা উড
 const frameWoodMat = new THREE.MeshStandardMaterial({ 
-    color: 0x1c0e08,      // গাঢ় ডার্ক চকলেট/উড ফ্রেম
+    color: 0x1c0e08,      
     roughness: 0.9, 
     metalness: 0.0 
 });
 
-// ৩. শুধুমাত্র নেমপ্লেট ও হ্যান্ডেলের জন্য রয়াল গোল্ডেন মেটাল
 const goldMetallicMat = new THREE.MeshStandardMaterial({ 
     color: 0xc5a059, 
     metalness: 0.8, 
@@ -306,39 +300,24 @@ const ceiling = new THREE.Mesh(new THREE.PlaneGeometry(40, 40), new THREE.MeshSt
 ceiling.position.y = 12; ceiling.rotation.x = Math.PI / 2;
 scene.add(ceiling);
 
-/* ==========================================
-   ROYAL CHANDELIER (ঝাড়বাতি তৈরি ও সেটিং)
-   ========================================== */
+/* ROYAL CHANDELIER */
 function createChandelier(x, y, z) {
     const chandelierGroup = new THREE.Group();
 
-    // ১. ঝুলন্ত গোল্ডেন রড (Golden Rod)
     const rodGeo = new THREE.CylinderGeometry(0.06, 0.06, 3.5, 16);
-    const goldMat = new THREE.MeshStandardMaterial({
-        color: 0xd4af37,
-        metalness: 0.9,
-        roughness: 0.2
-    });
+    const goldMat = new THREE.MeshStandardMaterial({ color: 0xd4af37, metalness: 0.9, roughness: 0.2 });
     const rod = new THREE.Mesh(rodGeo, goldMat);
     rod.position.y = 1.75;
     chandelierGroup.add(rod);
 
-    // ২. মেইন মেটাল রিং (Main Ring)
     const ringGeo = new THREE.TorusGeometry(1.8, 0.1, 16, 32);
     const ring = new THREE.Mesh(ringGeo, goldMat);
     ring.rotation.x = Math.PI / 2;
     chandelierGroup.add(ring);
 
-    // ৩. ক্রিস্টাল ও বাল্বের ম্যাটেরিয়াল
-    const crystalMat = new THREE.MeshPhysicalMaterial({
-        color: 0xffffff,
-        roughness: 0.05,
-        transmission: 0.9,
-        thickness: 0.5
-    });
+    const crystalMat = new THREE.MeshPhysicalMaterial({ color: 0xffffff, roughness: 0.05, transmission: 0.9, thickness: 0.5 });
     const bulbMat = new THREE.MeshBasicMaterial({ color: 0xffea8c });
 
-    // ৪. ৮টি লাইট বাল্ব ও ঝুলন্ত ক্রিস্টাল
     const bulbCount = 8;
     const radius = 1.8;
 
@@ -347,13 +326,11 @@ function createChandelier(x, y, z) {
         const bx = Math.cos(angle) * radius;
         const bz = Math.sin(angle) * radius;
 
-        // বাল্ব
         const bulbGeo = new THREE.SphereGeometry(0.18, 16, 16);
         const bulbMesh = new THREE.Mesh(bulbGeo, bulbMat);
         bulbMesh.position.set(bx, 0.1, bz);
         chandelierGroup.add(bulbMesh);
 
-        // নিচে ঝুলন্ত কাঁচের ক্রিস্টাল
         const crystalGeo = new THREE.ConeGeometry(0.12, 0.5, 6);
         const crystalMesh = new THREE.Mesh(crystalGeo, crystalMat);
         crystalMesh.position.set(bx, -0.4, bz);
@@ -361,18 +338,15 @@ function createChandelier(x, y, z) {
         chandelierGroup.add(crystalMesh);
     }
 
-    // ৫. ঝাড়বাতির নিজস্ব আলো (PointLight)
     const chandelierLight = new THREE.PointLight(0xffea8c, 3, 25);
     chandelierLight.position.set(0, -0.2, 0);
     chandelierLight.castShadow = true;
     chandelierGroup.add(chandelierLight);
 
-    // পজিশন অনুযায়ী সেট
     chandelierGroup.position.set(x, y, z);
     return chandelierGroup;
 }
 
-// ছাদ থেকে ঝাড়বাতি ঝুলানোর জন্য (y = 8.5 পজিশনে ঠিক ঘরের মাঝখানে)
 const royalChandelier = createChandelier(0, 8.5, 0);
 scene.add(royalChandelier);
 
@@ -387,7 +361,7 @@ createWall(40, 12, -20, 6, 0, Math.PI / 2);
 createWall(40, 12, 20, 6, 0, -Math.PI / 2);   
 createWall(40, 12, 0, 6, 20, Math.PI);        
 
-/* DOORS CONFIGURATION WITH PREMIUM TOP SPOTLIGHTS */
+/* DOORS CONFIGURATION */
 const interactiveObjects = [];
 
 const doorsConfig = [
@@ -404,7 +378,6 @@ doorsConfig.forEach(cfg => {
     frameGroup.position.set(cfg.pos[0], cfg.pos[1], cfg.pos[2]);
     frameGroup.rotation.y = cfg.rotY;
 
-    // ১. বাইরের ফ্রেম (উডেন ফ্রেম)
     const outerFrame = new THREE.Mesh(new THREE.BoxGeometry(4.2, 8.0, 0.35), frameWoodMat);
     frameGroup.add(outerFrame);
 
@@ -412,13 +385,11 @@ doorsConfig.forEach(cfg => {
     pivot.position.set(-1.6, 0, 0.08);
     frameGroup.add(pivot);
 
-    // ২. মূল দরজা (রিয়েল কাঠ)
     const door = new THREE.Mesh(new THREE.BoxGeometry(3.2, 7.3, 0.18), doorWoodMat);
     door.position.set(1.6, 0, 0);
     door.castShadow = true;
     pivot.add(door);
 
-    // ৩. দরজার খোদাই করা প্যানেল (এগুলোও কাঠ হবে)
     const panel1 = new THREE.Mesh(new THREE.BoxGeometry(2.3, 2.7, 0.24), doorWoodMat);
     panel1.position.set(1.6, 1.2, 0);
     pivot.add(panel1);
@@ -427,7 +398,6 @@ doorsConfig.forEach(cfg => {
     panel2.position.set(1.6, -1.8, 0);
     pivot.add(panel2);
 
-    // ৪. হ্যান্ডেল ও নেমপ্লেটের বর্ডার (এগুলো শুধু গোল্ডেন থাকবে)
     const handlePlate = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.9, 0.26), brassHandleMat);
     handlePlate.position.set(2.85, 0, 0);
     pivot.add(handlePlate);
@@ -438,7 +408,10 @@ doorsConfig.forEach(cfg => {
     pivot.add(handleKnob);
 
     const plateTex = createDoorPlateCanvas(cfg.id, cfg.title);
-    const plate = new THREE.Mesh(new THREE.PlaneGeometry(2.2, 1.1), new THREE.MeshStandardMaterial({ map: plateTex, roughness: 0.3 }));
+    const plate = new THREE.Mesh(
+        new THREE.PlaneGeometry(2.2, 1.1), 
+        new THREE.MeshBasicMaterial({ map: plateTex })
+    );
     plate.position.set(1.6, 1.85, 0.13);
     pivot.add(plate);
 
@@ -462,14 +435,14 @@ doorsConfig.forEach(cfg => {
     scene.add(frameGroup);
 });
 
-/* PROFILE FRAME WITH SPOTLIGHT */
+/* PROFILE FRAME WITH FIXED MATERIAL & SPOTLIGHT */
 const profileFrame = new THREE.Mesh(new THREE.BoxGeometry(6.6, 8.6, 0.22), goldMetallicMat);
 profileFrame.position.set(-19.8, 5.8, 0);
 profileFrame.rotation.y = Math.PI / 2;
 scene.add(profileFrame);
 
 const profileTex = createProfileCanvas();
-const profileArt = new THREE.Mesh(new THREE.PlaneGeometry(6.2, 8.2), new THREE.MeshStandardMaterial({ map: profileTex, roughness: 0.4 }));
+const profileArt = new THREE.Mesh(new THREE.PlaneGeometry(6.2, 8.2), new THREE.MeshBasicMaterial({ map: profileTex }));
 profileArt.position.set(-19.67, 5.8, 0);
 profileArt.rotation.y = Math.PI / 2;
 profileArt.userData = {
@@ -481,19 +454,245 @@ profileArt.userData = {
 interactiveObjects.push(profileArt);
 scene.add(profileArt);
 
-// Spotlight over Profile Art
-const profileSpot = new THREE.SpotLight(0xfffaed, 1.2);
-profileSpot.position.set(-18, 9.5, 0);
+const profileSpot = new THREE.SpotLight(0xfffaed, 0.4);
+profileSpot.position.set(-16, 9.5, 0);
 profileSpot.target = profileArt;
-profileSpot.angle = Math.PI / 4;
-profileSpot.penumbra = 0.7;
+profileSpot.angle = Math.PI / 6;
+profileSpot.penumbra = 0.9;
 scene.add(profileSpot);
+
+/* CROSSED SWORDS & SHIELD WALL EMBLEM */
+/* DOUBLE CANDLE WALL SCONCE (FOR 4 CORNERS) */
+function createCornerCandleLamp(x, y, z, rotY) {
+    const sconceGroup = new THREE.Group();
+
+    // ম্যাটেরিয়াল (ব্ল্যাক আয়রন, গোল্ড/ব্রাস ও ক্যান্ডেল ফ্লেম)
+    const ironMat = new THREE.MeshStandardMaterial({ color: 0x111111, metalness: 0.8, roughness: 0.4 });
+    const brassMat = new THREE.MeshStandardMaterial({ color: 0xd4af37, metalness: 0.85, roughness: 0.3 });
+    const candleWaxMat = new THREE.MeshStandardMaterial({ color: 0xf5f5dc, roughness: 0.9 });
+    const flameMat = new THREE.MeshBasicMaterial({ color: 0xffaa33 });
+    const glassTrayMat = new THREE.MeshPhysicalMaterial({ color: 0xffffff, roughness: 0.1, transmission: 0.8, transparent: true });
+
+    // ১. দেয়ালের ব্যাকপ্লেট (Black Circle Base)
+    const backplate = new THREE.Mesh(new THREE.CylinderGeometry(0.35, 0.35, 0.08, 24), ironMat);
+    backplate.rotation.x = Math.PI / 2;
+    sconceGroup.add(backplate);
+
+    // ২. বাঁকানো আয়রন কার্ভ আর্মস (Curved Iron Arms)
+    function createCurvedArm(direction) {
+        const armGroup = new THREE.Group();
+
+        // কার্ভড রড
+        const curve = new THREE.CatmullRomCurve3([
+            new THREE.Vector3(0, 0, 0),
+            new THREE.Vector3(direction * 0.4, -0.4, 0.2),
+            new THREE.Vector3(direction * 0.7, -0.1, 0.4),
+            new THREE.Vector3(direction * 0.75, 0.3, 0.45)
+        ]);
+        const tubeGeo = new THREE.TubeGeometry(curve, 20, 0.035, 8, false);
+        const tubeMesh = new THREE.Mesh(tubeGeo, ironMat);
+        armGroup.add(tubeMesh);
+
+        // গ্লাস ট্রে (Glass Plate under candle)
+        const tray = new THREE.Mesh(new THREE.CylinderGeometry(0.28, 0.15, 0.04, 16), glassTrayMat);
+        tray.position.set(direction * 0.75, 0.3, 0.45);
+        armGroup.add(tray);
+
+        // মোমবাতি স্ট্যান্ড/হোল্ডার (Candle Tube)
+        const candle = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 0.5, 16), candleWaxMat);
+        candle.position.set(direction * 0.75, 0.58, 0.45);
+        armGroup.add(candle);
+
+        // ক্যান্ডেল সকেট স্লিভ (Base Accent)
+        const socket = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.1, 0.12, 16), brassMat);
+        socket.position.set(direction * 0.75, 0.35, 0.45);
+        armGroup.add(socket);
+
+        // ক্যান্ডেল বাল্ব/ফ্লেম (Flame Tip)
+        const flameGeo = new THREE.ConeGeometry(0.07, 0.25, 12);
+        const flame = new THREE.Mesh(flameGeo, flameMat);
+        flame.position.set(direction * 0.75, 0.92, 0.45);
+        armGroup.add(flame);
+
+        // সফট ওয়ার্ম পয়েন্ট লাইট
+        const candleLight = new THREE.PointLight(0xff9933, 0.8, 6);
+        candleLight.position.set(direction * 0.75, 0.95, 0.5);
+        armGroup.add(candleLight);
+
+        return armGroup;
+    }
+
+    // বাম ও ডান দুটি ক্যান্ডেল আর্ম যোগ করা
+    sconceGroup.add(createCurvedArm(-1)); // Left Candle
+    sconceGroup.add(createCurvedArm(1));  // Right Candle
+
+    sconceGroup.position.set(x, y, z);
+    sconceGroup.rotation.y = rotY;
+    scene.add(sconceGroup);
+}
+
+/* ALL 4 CORNER CANDLE LAMPS */
+// ১. সামনের বাম কর্নার
+createCornerCandleLamp(-18.8, 5.5, -18.8, Math.PI / 4);
+
+// ২. সামনের ডান কর্নার
+createCornerCandleLamp(18.8, 5.5, -18.8, -Math.PI / 4);
+
+// ৩. পেছনের ডান কর্নার
+createCornerCandleLamp(18.8, 5.5, 18.8, -Math.PI * 0.75);
+
+// ৪. পেছনের বাম কর্নার
+createCornerCandleLamp(-18.8, 5.5, 18.8, Math.PI * 0.75);
+
+/* DYNAMIC WOOD TEXTURE GENERATOR FOR SHIELD */
+function createRealWoodTexture() {
+    const canvas = document.createElement('canvas');
+    canvas.width = 512;
+    canvas.height = 512;
+    const ctx = canvas.getContext('2d');
+
+    // বেস ডার্ক মেহগনি/ওক ব্যাকগ্রাউন্ড
+    ctx.fillStyle = '#2c180b';
+    ctx.fillRect(0, 0, 512, 512);
+
+    // কাঠের প্রাকৃতিক রিং এবং ফাইবার স্ট্রিপস
+    ctx.strokeStyle = 'rgba(60, 32, 12, 0.4)';
+    for (let i = 0; i < 200; i++) {
+        ctx.lineWidth = Math.random() * 4 + 1;
+        ctx.beginPath();
+        ctx.arc(256 + (Math.random() * 40 - 20), 256 + (Math.random() * 40 - 20), i * 2.5, 0, Math.PI * 2);
+        ctx.stroke();
+    }
+
+    // কাঠের ফাইবার লাইন
+    ctx.strokeStyle = 'rgba(15, 8, 3, 0.5)';
+    for (let j = 0; j < 80; j++) {
+        ctx.lineWidth = Math.random() * 2 + 0.5;
+        ctx.beginPath();
+        ctx.moveTo(Math.random() * 512, 0);
+        ctx.lineTo(Math.random() * 512, 512);
+        ctx.stroke();
+    }
+
+    const texture = new THREE.CanvasTexture(canvas);
+    texture.wrapS = THREE.RepeatWrapping;
+    texture.wrapT = THREE.RepeatWrapping;
+    return texture;
+}
+
+// গ্লোবাল উড টেক্সচার ইনস্ট্যান্স
+const realWoodTexture = createRealWoodTexture();
+
+/* CROSSED SWORDS & WOODEN SHIELD EMBLEM */
+function createSwordsEmblem(x, y, z, rotY) {
+    const group = new THREE.Group();
+
+    // ১. টেক্সচারযুক্ত রাজকীয় কাঠের ম্যাটেরিয়াল (Dark Royal Carved Wood)
+    const royalWoodMat = new THREE.MeshStandardMaterial({ 
+        map: realWoodTexture,
+        color: 0x5a3219,     
+        roughness: 0.65, 
+        metalness: 0.1 
+    });
+
+    const plaqueShape = new THREE.Shape();
+    plaqueShape.moveTo(0, 1.2);
+    plaqueShape.quadraticCurveTo(1.0, 1.0, 1.0, 0);
+    plaqueShape.quadraticCurveTo(0.8, -1.2, 0, -1.6);
+    plaqueShape.quadraticCurveTo(-0.8, -1.2, -1.0, 0);
+    plaqueShape.quadraticCurveTo(-1.0, 1.0, 0, 1.2);
+
+    const extrudeSettings = { depth: 0.1, bevelEnabled: true, bevelSegments: 4, steps: 1, bevelSize: 0.06, bevelThickness: 0.06 };
+    const plaqueGeo = new THREE.ExtrudeGeometry(plaqueShape, extrudeSettings);
+    const plaque = new THREE.Mesh(plaqueGeo, royalWoodMat);
+    plaque.position.z = -0.05;
+    plaque.castShadow = true;
+    group.add(plaque);
+
+    // ২. বাস্তবসম্মত স্টিল চাকুর ব্লেড ও অ্যান্টিক ব্রাস হ্যান্ডেল
+    const realKnifeSteelMat = new THREE.MeshStandardMaterial({ 
+        color: 0x999999,   
+        metalness: 0.8,   
+        roughness: 0.3    
+    });
+    
+    const darkBrassMat = new THREE.MeshStandardMaterial({ 
+        color: 0x3d3015,   
+        metalness: 0.6, 
+        roughness: 0.5 
+    });
+
+    // ৩. চাকু/তরবারি
+    function createSword() {
+        const sword = new THREE.Group();
+
+        // ব্লেড
+        const bladeGeo = new THREE.BoxGeometry(0.1, 3.2, 0.02);
+        const blade = new THREE.Mesh(bladeGeo, realKnifeSteelMat);
+        blade.position.y = 0.6;
+        blade.castShadow = true;
+        sword.add(blade);
+
+        // গার্ড
+        const guardGeo = new THREE.CylinderGeometry(0.18, 0.22, 0.15, 16);
+        const guard = new THREE.Mesh(guardGeo, darkBrassMat);
+        guard.position.y = -0.8;
+        sword.add(guard);
+
+        // হ্যান্ডেল গ্রিপ (কাঠের তৈরি)
+        const handleGeo = new THREE.CylinderGeometry(0.06, 0.06, 0.7, 12);
+        const handle = new THREE.Mesh(handleGeo, royalWoodMat);
+        handle.position.y = -1.25;
+        sword.add(handle);
+
+        // হেড
+        const pommelGeo = new THREE.SphereGeometry(0.12, 16, 16);
+        const pommel = new THREE.Mesh(pommelGeo, darkBrassMat);
+        pommel.position.y = -1.65;
+        sword.add(pommel);
+
+        return sword;
+    }
+
+    const sword1 = createSword();
+    sword1.rotation.z = Math.PI / 4;
+    sword1.position.z = 0.08;
+    group.add(sword1);
+
+    const sword2 = createSword();
+    sword2.rotation.z = -Math.PI / 4;
+    sword2.position.z = 0.08;
+    group.add(sword2);
+
+    // ৪. মাঝখানের কাঠের খোদাই করা গোল্ডেন-উড ট্রিম শিল্ড
+    const centerShieldGeo = new THREE.CylinderGeometry(0.65, 0.65, 0.08, 32);
+    const centerShield = new THREE.Mesh(centerShieldGeo, royalWoodMat);
+    centerShield.rotation.x = Math.PI / 2;
+    centerShield.position.z = 0.15;
+    centerShield.castShadow = true;
+    group.add(centerShield);
+
+    // বর্ডার স্টিল রিং
+    const innerRingGeo = new THREE.TorusGeometry(0.5, 0.02, 16, 32);
+    const innerRing = new THREE.Mesh(innerRingGeo, realKnifeSteelMat);
+    innerRing.position.z = 0.20;
+    group.add(innerRing);
+
+    group.position.set(x, y, z);
+    group.rotation.y = rotY;
+    scene.add(group);
+}
+
+/* ALL WALL EMBLEMS BETWEEN DOORS */
+createSwordsEmblem(0, 5.5, -19.8, 0);
+createSwordsEmblem(19.8, 5.5, 0, -Math.PI / 2);
+createSwordsEmblem(0, 5.5, 19.8, Math.PI);
 
 /* INITIAL CAMERA START POSITION */
 camera.position.set(0, 4.5, 0.1);
 controls.target.set(0, 4, -10);
 
-/* KEYBOARD CONTROLS SYSTEM (WASD / ARROW KEYS) */
+/* KEYBOARD CONTROLS SYSTEM */
 const keys = { w: false, a: false, s: false, d: false, ArrowUp: false, ArrowDown: false, ArrowLeft: false, ArrowRight: false };
 
 window.addEventListener('keydown', (e) => {
@@ -625,7 +824,7 @@ function triggerDoorOpenSequence(obj, data) {
     }
 }
 
-/* MODAL ENGINE & LIVE ADMIN EDITOR */
+/* MODAL ENGINE */
 function showToast(msg) {
     const toast = document.getElementById('toast-notification');
     document.getElementById('toast-message').innerText = msg;
@@ -738,10 +937,8 @@ function closeModal() {
 function animate() {
     requestAnimationFrame(animate);
 
-    // Handle WASD / Arrow Keys Movement
     handleKeyboardMovement();
 
-    // Room Clamping Boundaries
     camera.position.x = Math.max(-18, Math.min(18, camera.position.x));
     camera.position.z = Math.max(-18, Math.min(18, camera.position.z));
     camera.position.y = Math.max(1, Math.min(10, camera.position.y));
