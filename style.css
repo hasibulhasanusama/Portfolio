@@ -35,21 +35,47 @@ body, html {
     z-index: 1;
 }
 
-/* HEADER HUD */
+/* ===================================================
+   FORCE SINGLE LINE HEADER (NEVER BREAKS INTO MULTIPLE LINES)
+   =================================================== */
 header {
     position: absolute;
     top: 0;
     left: 0;
     width: 100%;
-    padding: 22px 35px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
+    padding: 12px 2vw !important;
+    display: flex !important;
+    flex-direction: row !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    flex-wrap: nowrap !important; /* ২য় বা ৩য় লাইনে যাওয়া সম্পূর্ণ ব্লক করা হলো */
     z-index: 10;
-    background: linear-gradient(180deg, rgba(3, 2, 2, 0.95) 0%, rgba(3, 2, 2, 0) 100%);
+    box-sizing: border-box !important;
     pointer-events: none;
 }
 
+.brand-logo {
+    white-space: nowrap !important;
+    font-size: clamp(11px, 1.3vw, 22px) !important; /* স্ক্রিন অনুযায়ী লোগোর সাইজ অ্যাডজাস্ট হবে */
+    pointer-events: auto;
+    flex-shrink: 0 !important;
+}
+
+.nav-controls {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    flex-wrap: nowrap !important; /* বাটনগুলোকে এক লাইনে লক রাখা হলো */
+    gap: 0.4vw !important; /* স্ক্রিন ছোট হলে বাটনের মাঝের খালি জায়গা কমবে */
+    pointer-events: auto;
+}
+
+.nav-btn {
+    white-space: nowrap !important; /* লেখার ভেতরে ভাঙন রোধ করবে */
+    font-size: clamp(7px, 0.8vw, 14px) !important; /* স্ক্রিন ছোট হলে বাটন টেক্সট স্বয়ংক্রিয়ভাবে ছোট হবে */
+    padding: 0.35em 0.6em !important; /* প্যাডিং স্ক্রিনের সাথে মানিয়ে যাবে */
+    flex-shrink: 1 !important; /* জায়গা কমলে বাটন সংকুচিত হয়ে এক লাইনেই থাকবে */
+}
 header * {
     pointer-events: auto;
 }

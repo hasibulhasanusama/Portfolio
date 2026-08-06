@@ -54,8 +54,8 @@ let activeOpenDoor = null;
 
 const PORTFOLIO_DATA = {
     profile: {
-        name: "ALEXANDER VANCE",
-        title: "Lead Architectural & WebGL Engineer",
+        name: "HSIBUL HASAN USAMA",
+        title: "SOFTWARE ENGINEER & 3D WEB DEVELOPER",
         avatarUrl: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=600&q=80",
         cvUrl: "#",
         bio: "Crafting immersive 3D spatial experiences, Gothic architectural rendering, and next-gen interactive web environments."
@@ -847,7 +847,7 @@ function showModal(doorId) {
         modalBody.innerHTML = `
             <p style="color:var(--gold-primary); font-weight:700; font-size:16px; font-family:'Cinzel', serif;">${p.title}</p>
             <p style="margin-top:10px;">${p.bio}</p>
-            <a href="${p.cvUrl}" target="_blank" class="btn-action"><i class="fa-solid fa-scroll"></i> Download Official Scroll</a>
+            <a href="${p.cvUrl}" target="_blank" class="btn-action"><i class="fa-solid fa-scroll"></i> Download CV</a>
         `;
     } else {
         const info = PORTFOLIO_DATA[doorId];
