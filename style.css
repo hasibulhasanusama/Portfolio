@@ -284,5 +284,8 @@ header * {
     transform: translateX(150%); transition: transform 0.4s ease;
     box-shadow: 0 10px 25px rgba(0,0,0,0.8); font-family: 'Cinzel', serif;
 }
-
 #toast-notification.show { transform: translateX(0); }
+/* Carousel scrollbar hide */
+.carousel-track::-webkit-scrollbar {
+    display: none;
+}

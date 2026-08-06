@@ -1,4 +1,36 @@
-/* AUDIO ENGINE */
+// বোতামে ক্লিক করলে ছবি ডানে-বামে স্লাইড করার ফাংশন
+window.slideCarousel = function(btn, direction) {
+    const container = btn.parentElement;
+    const track = container.querySelector('.carousel-track');
+    const slideWidth = track.clientWidth;
+    track.scrollBy({ left: direction * slideWidth, behavior: 'smooth' });
+};
+
+// স্ক্রোল হওয়ার সাথে সাথে বাটন হাইড/শো করার ফাংশন
+window.handleCarouselScroll = function(track) {
+    const container = track.parentElement;
+    const prevBtn = container.querySelector('.prev-btn');
+    const nextBtn = container.querySelector('.next-btn');
+
+    if (!prevBtn || !nextBtn) return;
+
+    const scrollLeft = track.scrollLeft;
+    const maxScroll = track.scrollWidth - track.clientWidth;
+
+    // একদম শুরুতে থাকলে বামের অ্যারো হাইড হবে
+    if (scrollLeft <= 10) {
+        prevBtn.style.display = 'none';
+    } else {
+        prevBtn.style.display = 'flex';
+    }
+
+    // একদম শেষে থাকলে ডানের অ্যারো হাইড হবে
+    if (scrollLeft >= maxScroll - 10) {
+        nextBtn.style.display = 'none';
+    } else {
+        nextBtn.style.display = 'flex';
+    }
+};/* AUDIO ENGINE */
 const AudioEngine = {
     ctx: null,
     init() {
@@ -71,42 +103,76 @@ const PORTFOLIO_DATA = {
     102: {
         title: "Featured Works",
         items: [
-            { name: "3D Gothic Mansion", desc: "Real-time shadow-mapped indoor environment with custom lighting.", link: "#" },
-            { name: "WebGL Car Configurator", desc: "Interactive 60FPS PBR material customizer.", link: "#" },
-            { name: "Spatial Data Globe", desc: "Global telemetry visualizer rendering 100k+ instanced points.", link: "#" }
+            { name: "OCTA", desc: "Organized Cyber Threat Alliance platform for threat intelligence and cyber security collaboration.", link: "#" },
+            { name: "Smart Parking System", desc: "Automated parking management using Arduino, IR sensors, and servo motor.", link: "#" },
+            { name: "Alert Rader System", desc: "Real-time object detection and radar visualization using Arduino and Processing.", link: "#" },
+            { name: "3D Portfolio", desc: "Interactive 3D portfolio with animations, smooth transitions, and responsive design.", link: "#" }
         ]
     },
-    103: {
-        title: "Core Skills",
-        skills: [
-            { name: "Three.js & WebGL", level: 95 },
-            { name: "GLSL Shaders & PBR", level: 88 },
-            { name: "JavaScript / ES6+", level: 92 },
-            { name: "Blender 3D Modeling", level: 82 },
-            { name: "GSAP Animations", level: 90 }
-        ]
-    },
-    104: {
-        title: "Awards & Honors",
-        list: [
-            { title: "Best WebGL Experience 2024", org: "Awwwards Site of the Day" },
-            { title: "Architectural Graphics Innovation", org: "3D Web Summit London" },
-            { title: "Top Open-Source Contributor", org: "Three.js Community" }
-        ]
-    },
+  103: {
+    title: "Core Skills & Languages",
+    skills: [
+        { name: "HTML", level: 93 },
+        { name: "CSS", level: 95 },
+        { name: "JavaScript / ES6+", level: 92 },
+        { name: "Java", level: 90 },
+        { name: "C", level: 80 },
+        { name: "MySQL", level: 89 }
+    ],
+    languages: [
+        { name: "Bangla", level: 99 },
+        { name: "English", level: 70 },
+        { name: "Hindi", level: 90 },
+        { name: "Arabic", level: 60 }
+    ]
+},
+104: {
+    title: "Awards & Certificates",
+    awards: [
+      { 
+    title: "CyberSecurity Awards Day 2026", 
+    subtitle: "IDEA Presentation Competition",
+    images: [
+        "download (3).jfif",
+        "download (4).jfif",
+        "download (5).jfif"
+    ]
+},
+        { 
+            title: "BIZ case Battle 2026", 
+            subtitle: "Business Idea Presentation Competition",
+            image: "download.jfif"
+        },
+        { 
+            title: "Innovate for Humanity 2026", 
+            subtitle: "Idea Context",
+            image: "download (1).jfif"
+        },
+                { 
+            title: "SimpleLearn SKIllUP", 
+            subtitle: "OOPs in Java",
+            image: "images/certificate3.jpg"
+        }
+    ]
+},
     105: {
-        title: "Certificates",
+    title: "Get In Touch",
+    email: "hasibulhasanusama@gmail.com",
+    phone: "+880 1708302032",
+    location: "Gazipur,Dhaka,Bangladesh",
+    facebook: "https://facebook.com/hasibulhasanosama", // আপনার লিংক বসাবেন
+    whatsapp: "https://wa.me/8801708302032",
+    github: "https://github.com/hasibulhasanusama",
+    linkedin: "https://linkedin.com/in/hasibul-hasan-usama-1435653b7",
+    discord: "https://discord.com/users/hasibulhasanusama_65967"
+},
+    106: { 
+        title: "AI",
         certs: [
             { name: "AWS Certified Solutions Architect", year: "2023" },
             { name: "Three.js Master Developer Certification", year: "2022" },
             { name: "Professional Unreal Engine Dev", year: "2021" }
         ]
-    },
-    106: {
-        title: "Get In Touch",
-        email: "alexander.vance@architect3d.com",
-        phone: "+1 (555) 019-2834",
-        location: "New York City, USA"
     }
 };
 
@@ -369,8 +435,8 @@ const doorsConfig = [
     { id: "102", title: "Projects", pos: [7, 3.8, -19.8], rotY: 0, camPos: [7, 3.8, -12], camTarget: [7, 3.8, -19.8] },
     { id: "103", title: "Skills", pos: [19.8, 3.8, -7], rotY: -Math.PI / 2, camPos: [12, 3.8, -7], camTarget: [19.8, 3.8, -7] },
     { id: "104", title: "Awards", pos: [19.8, 3.8, 7], rotY: -Math.PI / 2, camPos: [12, 3.8, 7], camTarget: [19.8, 3.8, 7] },
-    { id: "105", title: "Documents", pos: [7, 3.8, 19.8], rotY: Math.PI, camPos: [7, 3.8, 12], camTarget: [7, 3.8, 19.8] },
-    { id: "106", title: "Contact", pos: [-7, 3.8, 19.8], rotY: Math.PI, camPos: [-7, 3.8, 12], camTarget: [-7, 3.8, 19.8] }
+    { id: "105", title: "Contact", pos: [7, 3.8, 19.8], rotY: Math.PI, camPos: [7, 3.8, 12], camTarget: [7, 3.8, 19.8] },
+    { id: "106", title: "AI", pos: [-7, 3.8, 19.8], rotY: Math.PI, camPos: [-7, 3.8, 12], camTarget: [-7, 3.8, 19.8] }
 ];
 
 doorsConfig.forEach(cfg => {
@@ -878,29 +944,85 @@ function showModal(doorId) {
                     `).join('')}
                 </div>
             `;
-        } else if (doorId === "103") {
-            modalBody.innerHTML = `
-                <div class="grid-layout">
-                    ${info.skills.map(s => `
+   } else if (doorId === "103") {
+    modalBody.innerHTML = `
+        <div style="display: flex; gap: 24px; flex-wrap: wrap;">
+            
+            <!-- Technical Skills Section -->
+            <div style="flex: 2; min-width: 280px;">
+                <h3 style="color: var(--gold-primary); font-size: 1rem; letter-spacing: 1px; margin-bottom: 12px; border-bottom: 1px dashed rgba(212, 175, 55, 0.3); padding-bottom: 6px;">TECHNICAL SKILLS</h3>
+                <!-- grid-template-columns inline style যোগ করা হয়েছে যেন সব কার্ড দেখায় -->
+                <div class="grid-layout" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px;">
+                    ${(info.skills || []).map(s => `
                         <div class="info-card">
                             <h4>${s.name}</h4>
                             <p style="color:var(--gold-primary); font-weight:700;">Proficiency: ${s.level}%</p>
                         </div>
                     `).join('')}
                 </div>
-            `;
-        } else if (doorId === "104") {
-            modalBody.innerHTML = `
-                <div class="grid-layout">
-                    ${info.list.map(a => `
+            </div>
+
+            <!-- Languages Section -->
+            <div style="flex: 1; min-width: 200px;">
+                <h3 style="color: var(--gold-primary); font-size: 1rem; letter-spacing: 1px; margin-bottom: 12px; border-bottom: 1px dashed rgba(212, 175, 55, 0.3); padding-bottom: 6px;">LANGUAGES</h3>
+                <div class="grid-layout" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px;">
+                    ${(info.languages || []).map(l => `
                         <div class="info-card">
-                            <h4>${a.title}</h4>
-                            <p style="color:var(--gold-primary);">${a.org}</p>
+                            <h4>${l.name}</h4>
+                            <p style="color:var(--gold-primary); font-weight:700;">Proficiency: ${l.level}%</p>
                         </div>
                     `).join('')}
                 </div>
-            `;
-        } else if (doorId === "105") {
+            </div>
+
+        </div>
+    `;
+} else if (doorId === "104") {
+    modalBody.innerHTML = `
+        <div class="awards-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px;">
+            ${(info.awards || []).map((a) => {
+                const imgList = a.images || (a.image ? [a.image] : []);
+                const hasMultiple = imgList.length > 1;
+
+                return `
+                    <div class="award-card" style="border: 1px solid rgba(212, 175, 55, 0.4); border-radius: 8px; padding: 16px; background: rgba(255, 255, 255, 0.02); display: flex; flex-direction: column; gap: 12px;">
+                        
+                        <!-- Text Info -->
+                        <div>
+                            <h4 style="color: #f2e3c6; font-size: 1.05rem; letter-spacing: 0.5px; margin-bottom: 6px; text-transform: uppercase;">${a.title}</h4>
+                            <p style="color: var(--gold-primary, #d4af37); font-size: 0.85rem; opacity: 0.9;">${a.subtitle}</p>
+                        </div>
+
+                        <!-- Image Carousel Container -->
+                        <div class="carousel-container" style="position: relative; width: 100%; height: 180px; border-radius: 6px; overflow: hidden; border: 1px solid rgba(212, 175, 55, 0.2);">
+                            
+                            <!-- Previous Arrow Button (শুরুতে হাইড থাকবে) -->
+                            ${hasMultiple ? `
+                                <button class="prev-btn" onclick="slideCarousel(this, -1)" style="display: none; position: absolute; left: 8px; top: 50%; transform: translateY(-50%); z-index: 10; background: rgba(0, 0, 0, 0.7); color: var(--gold-primary, #d4af37); border: 1px solid rgba(212, 175, 55, 0.5); border-radius: 50%; width: 28px; height: 28px; cursor: pointer; align-items: center; justify-content: center; font-size: 14px;">❮</button>
+                            ` : ''}
+
+                            <!-- Image Track -->
+                            <div class="carousel-track" onscroll="handleCarouselScroll(this)" style="display: flex; width: 100%; height: 100%; overflow-x: auto; scroll-snap-type: x mandatory; scroll-behavior: smooth; scrollbar-width: none; -ms-overflow-style: none;">
+                                ${imgList.map(imgSrc => `
+                                    <div style="flex: 0 0 100%; width: 100%; height: 100%; scroll-snap-align: start; background: #000;">
+                                        <img src="${imgSrc}" alt="${a.title}" style="width: 100%; height: 100%; object-fit: cover;">
+                                    </div>
+                                `).join('')}
+                            </div>
+
+                            <!-- Next Arrow Button (একাধিক ছবি থাকলে শুরুতে শো থাকবে) -->
+                            ${hasMultiple ? `
+                                <button class="next-btn" onclick="slideCarousel(this, 1)" style="display: flex; position: absolute; right: 8px; top: 50%; transform: translateY(-50%); z-index: 10; background: rgba(0, 0, 0, 0.7); color: var(--gold-primary, #d4af37); border: 1px solid rgba(212, 175, 55, 0.5); border-radius: 50%; width: 28px; height: 28px; cursor: pointer; align-items: center; justify-content: center; font-size: 14px;">❯</button>
+                            ` : ''}
+
+                        </div>
+
+                    </div>
+                `;
+            }).join('')}
+        </div>
+    `;
+}else if (doorId === "106") {
             modalBody.innerHTML = `
                 <div class="grid-layout">
                     ${info.certs.map(c => `
@@ -911,15 +1033,106 @@ function showModal(doorId) {
                     `).join('')}
                 </div>
             `;
-        } else if (doorId === "106") {
-            modalBody.innerHTML = `
-                <div class="info-card">
-                    <p><strong><i class="fa-solid fa-envelope"></i> Email:</strong> ${info.email}</p>
-                    <p style="margin-top:6px;"><strong><i class="fa-solid fa-phone"></i> Phone:</strong> ${info.phone}</p>
-                    <p style="margin-top:6px;"><strong><i class="fa-solid fa-location-dot"></i> Location:</strong> ${info.location}</p>
+       } else if (doorId === "105"){
+    const mapUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(info.location)}`;
+
+    modalBody.innerHTML = `
+        <div style="display: flex; gap: 20px; flex-wrap: wrap; align-items: stretch;">
+            
+            <!-- Left Side: Contact Details & Social Icons -->
+            <div style="flex: 1; min-width: 280px; border: 1px solid rgba(212, 175, 55, 0.3); border-radius: 8px; padding: 20px; background: rgba(0, 0, 0, 0.2); display: flex; flex-direction: column; justify-content: space-between; gap: 20px;">
+                
+                <div style="display: flex; flex-direction: column; gap: 16px; color: #f2e3c6; font-size: 0.95rem;">
+                    
+                    <!-- Email -->
+                    <div style="display: flex; align-items: flex-start; gap: 12px;">
+                        <i class="fa-regular fa-envelope" style="color: #d4af37; font-size: 1.1rem; margin-top: 3px;"></i>
+                        <div style="display: flex; flex-direction: column; gap: 2px;">
+                            <strong style="color: #ffffff; font-size: 0.9rem;">Email:</strong>
+                            <span style="color: #d4d4d4; word-break: break-all;">${info.email}</span>
+                        </div>
+                    </div>
+
+                    <!-- Phone -->
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <i class="fa-solid fa-phone" style="color: #d4af37; font-size: 1rem;"></i>
+                        <div style="display: flex; align-items: center; gap: 6px;">
+                            <strong style="color: #ffffff; font-size: 0.9rem;">Phone:</strong>
+                            <span style="color: #d4d4d4;">${info.phone}</span>
+                        </div>
+                    </div>
+
+                    <!-- Location -->
+                    <div style="display: flex; flex-direction: column; gap: 8px;">
+                        <div style="display: flex; align-items: center; gap: 12px;">
+                            <i class="fa-solid fa-location-dot" style="color: #d4af37; font-size: 1.1rem;"></i>
+                            <strong style="color: #ffffff; font-size: 0.9rem;">Location:</strong>
+                        </div>
+                        
+                        <!-- Clickable Location Box -->
+                        <a href="${mapUrl}" target="_blank" title="Click to view on Google Maps" style="display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; background: rgba(212, 175, 55, 0.08); border: 1px solid rgba(212, 175, 55, 0.4); border-radius: 6px; color: #f2e3c6; text-decoration: none; transition: all 0.3s ease;" onmouseover="this.style.background='rgba(212, 175, 55, 0.2)'; this.style.borderColor='#d4af37';" onmouseout="this.style.background='rgba(212, 175, 55, 0.08)'; this.style.borderColor='rgba(212, 175, 55, 0.4)';">
+                            <span style="font-size: 0.88rem; font-weight: 500; color: #e5e5e5;">${info.location}</span>
+                            <span style="color: #d4af37; font-size: 0.85rem; font-weight: bold; display: flex; align-items: center; gap: 4px;">Map <i class="fa-solid fa-arrow-up-right-from-square" style="font-size: 0.75rem;"></i></span>
+                        </a>
+                    </div>
+
                 </div>
-            `;
-        }
+
+                <!-- Social Icons Section -->
+                <div style="border-top: 1px dashed rgba(212, 175, 55, 0.3); padding-top: 16px;">
+                    <h4 style="color: #d4af37; font-size: 0.85rem; letter-spacing: 1px; margin-bottom: 12px; text-transform: uppercase;">Connect With Me</h4>
+                    <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                        
+                        <!-- Facebook -->
+                        <a href="${info.facebook}" target="_blank" title="Facebook" style="width: 38px; height: 38px; border-radius: 50%; border: 1px solid rgba(212, 175, 55, 0.4); display: flex; align-items: center; justify-content: center; color: #d4af37; text-decoration: none; transition: 0.3s; background: rgba(212, 175, 55, 0.05);" onmouseover="this.style.background='#d4af37'; this.style.color='#000';" onmouseout="this.style.background='rgba(212, 175, 55, 0.05)'; this.style.color='#d4af37';">
+                            <i class="fa-brands fa-facebook-f" style="font-size: 1rem;"></i>
+                        </a>
+
+                        <!-- WhatsApp -->
+                        <a href="${info.whatsapp}" target="_blank" title="WhatsApp" style="width: 38px; height: 38px; border-radius: 50%; border: 1px solid rgba(212, 175, 55, 0.4); display: flex; align-items: center; justify-content: center; color: #d4af37; text-decoration: none; transition: 0.3s; background: rgba(212, 175, 55, 0.05);" onmouseover="this.style.background='#d4af37'; this.style.color='#000';" onmouseout="this.style.background='rgba(212, 175, 55, 0.05)'; this.style.color='#d4af37';">
+                            <i class="fa-brands fa-whatsapp" style="font-size: 1.1rem;"></i>
+                        </a>
+
+                        <!-- LinkedIn -->
+                        <a href="${info.linkedin}" target="_blank" title="LinkedIn" style="width: 38px; height: 38px; border-radius: 50%; border: 1px solid rgba(212, 175, 55, 0.4); display: flex; align-items: center; justify-content: center; color: #d4af37; text-decoration: none; transition: 0.3s; background: rgba(212, 175, 55, 0.05);" onmouseover="this.style.background='#d4af37'; this.style.color='#000';" onmouseout="this.style.background='rgba(212, 175, 55, 0.05)'; this.style.color='#d4af37';">
+                            <i class="fa-brands fa-linkedin-in" style="font-size: 1rem;"></i>
+                        </a>
+
+                        <!-- Discord -->
+                        <a href="${info.discord}" target="_blank" title="Discord" style="width: 38px; height: 38px; border-radius: 50%; border: 1px solid rgba(212, 175, 55, 0.4); display: flex; align-items: center; justify-content: center; color: #d4af37; text-decoration: none; transition: 0.3s; background: rgba(212, 175, 55, 0.05);" onmouseover="this.style.background='#d4af37'; this.style.color='#000';" onmouseout="this.style.background='rgba(212, 175, 55, 0.05)'; this.style.color='#d4af37';">
+                            <i class="fa-brands fa-discord" style="font-size: 1rem;"></i>
+                        </a>
+
+                        <!-- GitHub -->
+                        <a href="${info.github}" target="_blank" title="GitHub" style="width: 38px; height: 38px; border-radius: 50%; border: 1px solid rgba(212, 175, 55, 0.4); display: flex; align-items: center; justify-content: center; color: #d4af37; text-decoration: none; transition: 0.3s; background: rgba(212, 175, 55, 0.05);" onmouseover="this.style.background='#d4af37'; this.style.color='#000';" onmouseout="this.style.background='rgba(212, 175, 55, 0.05)'; this.style.color='#d4af37';">
+                            <i class="fa-brands fa-github" style="font-size: 1rem;"></i>
+                        </a>
+
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Right Side: Direct Message Form -->
+            <div style="flex: 1.2; min-width: 280px; border: 1px solid rgba(212, 175, 55, 0.3); border-radius: 8px; padding: 20px; background: rgba(0, 0, 0, 0.2);">
+                <h4 style="color: #d4af37; font-size: 0.9rem; letter-spacing: 1px; margin-bottom: 14px; text-transform: uppercase;">Send Direct Message</h4>
+                
+                <form onsubmit="event.preventDefault(); window.location.href='mailto:${info.email}?subject=Message from ' + encodeURIComponent(this.name.value) + '&body=' + encodeURIComponent(this.message.value + '\n\nSender Email: ' + this.email.value);" style="display: flex; flex-direction: column; gap: 10px;">
+                    <input type="text" name="name" placeholder="Your Name" required style="width: 100%; padding: 10px; background: rgba(0,0,0,0.5); border: 1px solid rgba(212, 175, 55, 0.3); border-radius: 6px; color: #f2e3c6; outline: none; font-size: 0.85rem;" onfocus="this.style.borderColor='#d4af37'" onblur="this.style.borderColor='rgba(212, 175, 55, 0.3)'">
+                    
+                    <input type="email" name="email" placeholder="Your Email" required style="width: 100%; padding: 10px; background: rgba(0,0,0,0.5); border: 1px solid rgba(212, 175, 55, 0.3); border-radius: 6px; color: #f2e3c6; outline: none; font-size: 0.85rem;" onfocus="this.style.borderColor='#d4af37'" onblur="this.style.borderColor='rgba(212, 175, 55, 0.3)'">
+                    
+                    <textarea name="message" rows="3" placeholder="Your Message" required style="width: 100%; padding: 10px; background: rgba(0,0,0,0.5); border: 1px solid rgba(212, 175, 55, 0.3); border-radius: 6px; color: #f2e3c6; outline: none; resize: vertical; font-size: 0.85rem;" onfocus="this.style.borderColor='#d4af37'" onblur="this.style.borderColor='rgba(212, 175, 55, 0.3)'"></textarea>
+                    
+                    <button type="submit" style="background: #d4af37; color: #000; font-weight: bold; padding: 10px; border: none; border-radius: 6px; cursor: pointer; transition: 0.3s; font-size: 0.85rem; letter-spacing: 0.5px;" onmouseover="this.style.opacity='0.85'" onmouseout="this.style.opacity='1'">
+                        SEND MESSAGE ➔
+                    </button>
+                </form>
+            </div>
+
+        </div>
+    `;
+}
     }
     modal.classList.add('active');
 }
