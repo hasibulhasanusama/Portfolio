@@ -166,13 +166,9 @@ const PORTFOLIO_DATA = {
     linkedin: "https://linkedin.com/in/hasibul-hasan-usama-1435653b7",
     discord: "https://discord.com/users/hasibulhasanusama_65967"
 },
-    106: { 
-        title: "AI",
-        certs: [
-            { name: "AWS Certified Solutions Architect", year: "2023" },
-            { name: "Three.js Master Developer Certification", year: "2022" },
-            { name: "Professional Unreal Engine Dev", year: "2021" }
-        ]
+    106: {
+        title: "AI Assistant",
+        description: "Ask anything about Hasibul Hasan Usama"
     }
 };
 
@@ -1022,18 +1018,37 @@ function showModal(doorId) {
             }).join('')}
         </div>
     `;
-}else if (doorId === "106") {
-            modalBody.innerHTML = `
-                <div class="grid-layout">
-                    ${info.certs.map(c => `
-                        <div class="info-card">
-                            <h4>${c.name}</h4>
-                            <p>Issued: ${c.year}</p>
-                        </div>
-                    `).join('')}
-                </div>
-            `;
-       } else if (doorId === "105"){
+} else if (doorId === "106") {
+    modalBody.innerHTML = `
+        <div style="display: flex; flex-direction: column; gap: 15px; font-family: 'Plus Jakarta Sans', sans-serif;">
+            
+            <p style="color: #a0a0a0; font-size: 0.9rem; margin: 0;">
+                Ask anything about Hasibul's skills, experience, or contact details!
+            </p>
+
+            <!-- Search Input Group -->
+            <div style="display: flex; gap: 10px; width: 100%;">
+                <input type="text" id="aiInput" placeholder="e.g. What are his main skills?" 
+                    style="flex: 1; padding: 12px 16px; background: rgba(0, 0, 0, 0.6); border: 1px solid rgba(212, 175, 55, 0.4); border-radius: 8px; color: #fff; font-size: 0.9rem; outline: none; transition: 0.3s;"
+                    onfocus="this.style.borderColor='#d4af37'" onblur="this.style.borderColor='rgba(212, 175, 55, 0.4)'"
+                />
+                
+                <button id="aiAskBtn" type="button" 
+                    style="padding: 12px 24px; background: linear-gradient(135deg, #d4af37 0%, #aa820a 100%); border: none; border-radius: 8px; color: #000; font-weight: 700; cursor: pointer; font-size: 0.9rem; white-space: nowrap; transition: 0.3s;"
+                    onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'">
+                    <i class="fa-solid fa-paper-plane" style="margin-right: 5px;"></i> Ask AI
+                </button>
+            </div>
+
+            <!-- Response Display Area -->
+            <div id="aiResult" 
+                style="background: rgba(15, 14, 12, 0.8); border: 1px solid rgba(212, 175, 55, 0.2); border-radius: 8px; padding: 16px; min-height: 90px; color: #e1e1e6; font-size: 0.92rem; line-height: 1.6;">
+                <span style="color: #777; font-style: italic;">Response will appear here...</span>
+            </div>
+
+        </div>
+    `;
+} else if (doorId === "105"){
     const mapUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(info.location)}`;
 
     modalBody.innerHTML = `
@@ -1166,3 +1181,145 @@ window.addEventListener('resize', () => {
     camera.updateProjectionMatrix();
     renderer.setSize(window.innerWidth, window.innerHeight);
 });
+
+// আপনার স্ক্রিনশট থেকে নেওয়া সঠিক API Key
+const GEMINI_API_KEY = "";
+
+document.addEventListener("click", function (e) {
+    if (
+        e.target &&
+        (e.target.id === "aiAskBtn" ||
+            e.target.closest("#aiAskBtn"))
+    ) {
+        callGeminiAI();
+    }
+});
+
+document.addEventListener("keypress", function (e) {
+    if (
+        e.key === "Enter" &&
+        document.activeElement &&
+        document.activeElement.id === "aiInput"
+    ) {
+        callGeminiAI();
+    }
+});
+
+async function callGeminiAI() {
+    const input = document.getElementById("aiInput");
+    const resultBox = document.getElementById("aiResult");
+
+    if (!input || !resultBox) return;
+
+    const userQuery = input.value.trim();
+
+    if (!userQuery) return;
+
+    resultBox.innerHTML =
+        '<span style="color:#d4af37;">✨ Usama is thinking...</span>';
+
+    const promptContext = `
+You are an AI portfolio assistant for Hasibul Hasan Usama.
+
+Portfolio Details:
+
+Name: Hasibul Hasan Usama
+Profession: Software Engineer & 3D Web Developer
+
+Key Skills:
+JavaScript, Three.js, C, CSS, Java, Node.js, HTML,C++
+key Languages: 
+English, Bangla,Arabic,Hindi
+
+Contact:
+Email: hasibulhasanusama@gmail.com
+Phone: +8801708302032
+
+LinkedIn:
+https://linkedin.com/in/hasibul-hasan-usama-1435653b7/
+facebook: 
+https://facebook.com/hasibulhasanosama/ // আপনার লিংক বসাবেন
+whatsapp: 
+https://wa.me/8801708302032/
+github: 
+https://github.com/hasibulhasanusama
+discord: 
+https://discord.com/users/hasibulhasanusama_65967/
+
+
+
+Visitor's Question:
+"${userQuery}"
+
+LANGUAGE RULES:
+1. By default, always answer in English.
+2. If the visitor asks "Bangla te deo", "বাংলায় দাও", "বাংলায় বলো", "Bangla", or clearly requests Bangla, answer completely in Bangla.
+3. If the visitor asks "English e deo", "ইংরেজিতে দাও", "English", or clearly requests English, answer completely in English.
+4. Never mix Bangla and English in the same answer unless the visitor specifically asks for mixed language.
+5. Keep the answer professional, natural, and concise.
+6. Answer in 2-3 sentences.
+7. Only provide information related to this portfolio.
+
+IMPORTANT:
+If the visitor simply asks a normal question without specifying a language, use English.
+`;
+
+    try {
+        const response = await fetch(
+            "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent",
+            {
+                method: "POST",
+
+                headers: {
+                    "Content-Type": "application/json",
+                    "x-goog-api-key": GEMINI_API_KEY
+                },
+
+                body: JSON.stringify({
+                    contents: [
+                        {
+                            parts: [
+                                {
+                                    text: promptContext
+                                }
+                            ]
+                        }
+                    ]
+                })
+            }
+        );
+
+        const data = await response.json();
+
+        console.log("Gemini Response:", data);
+
+        if (
+            data.candidates &&
+            data.candidates[0] &&
+            data.candidates[0].content &&
+            data.candidates[0].content.parts &&
+            data.candidates[0].content.parts[0]
+        ) {
+            const replyText =
+                data.candidates[0].content.parts[0].text;
+
+            resultBox.innerHTML = replyText.replace(/\n/g, "<br>");
+        } else if (data.error) {
+            resultBox.innerHTML =
+                `<span style="color:#ff6b6b;">
+                    API Error: ${data.error.message}
+                </span>`;
+        } else {
+            resultBox.innerHTML =
+                "Sorry, couldn't get a response.";
+        }
+
+    } catch (error) {
+        console.error("Gemini Error:", error);
+
+        resultBox.innerHTML =
+            `<span style="color:#ff6b6b;">
+                Error connecting to AI service.
+            </span>`;
+    }
+}
