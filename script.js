@@ -1181,7 +1181,7 @@ window.addEventListener('resize', () => {
     camera.updateProjectionMatrix();
     renderer.setSize(window.innerWidth, window.innerHeight);
 });
-
+//GEMINI_AI
 document.addEventListener("click", function (e) {
     if (
         e.target &&
