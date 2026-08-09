@@ -52,9 +52,11 @@ LANGUAGE RULES:
     `;
 
     try {
-        const targetUrl = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=' + apiKey;
+        // ASCII Hyphen নিশ্চিত করার জন্য আলাদা স্ট্রিং তৈরি করা হলো
+        const modelName = "gemini-1.5-flash";
+        const url = "https://generativelanguage.googleapis.com/v1beta/models/" + modelName + ":generateContent?key=" + apiKey;
 
-        const response = await fetch(targetUrl, {
+        const response = await fetch(url, {
             method: "POST",
             headers: { 
                 "Content-Type": "application/json"
