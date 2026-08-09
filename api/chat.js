@@ -1,5 +1,3 @@
-const https = require('https');
-
 module.exports = async function handler(req, res) {
     if (req.method !== 'POST') {
         return res.status(405).json({ error: 'Method Not Allowed' });
@@ -13,7 +11,7 @@ module.exports = async function handler(req, res) {
     const apiKey = process.env.GEMINI_API_KEY;
 
     if (!apiKey) {
-        return res.status(500).json({ error: 'API Key is missing in Vercel Environment Variables.' });
+        return res.status(200).json({ reply: 'Error: GEMINI_API_KEY is missing in Vercel Environment Variables.' });
     }
 
     const promptContext = `
@@ -54,41 +52,28 @@ LANGUAGE RULES:
     `;
 
     try {
-        const postData = JSON.stringify({
-            contents: [{ parts: [{ text: promptContext }] }]
+        const url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=" + apiKey;
+        
+        const response = await fetch(url, {
+            method: "POST",
+            headers: { 
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                contents: [{ parts: [{ text: promptContext }] }]
+            })
         });
 
-        const options = {
-            hostname: 'generativelanguage.googleapis.com',
-            path: `/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Content-Length': Buffer.byteLength(postData)
-            }
-        };
-
-        const apiResponse = await new Promise((resolve, reject) => {
-            const request = https.request(options, (response) => {
-                let data = '';
-                response.on('data', (chunk) => { data += chunk; });
-                response.on('end', () => resolve({ status: response.statusCode, body: data }));
-            });
-            request.on('error', (err) => reject(err));
-            request.write(postData);
-            request.end();
-        });
-
-        const data = JSON.parse(apiResponse.body);
+        const data = await response.json();
 
         if (data.candidates && data.candidates[0]?.content?.parts[0]?.text) {
             return res.status(200).json({ reply: data.candidates[0].content.parts[0].text });
         } else if (data.error) {
-            return res.status(500).json({ error: data.error.message || "Google API Error" });
+            return res.status(200).json({ reply: `Google API Error: ${data.error.message}` });
         } else {
-            return res.status(500).json({ error: "Invalid response format from AI." });
+            return res.status(200).json({ reply: "Couldn't generate a response." });
         }
     } catch (error) {
-        return res.status(500).json({ error: error.message || "Server connection failed." });
+        return res.status(200).json({ reply: `Server Error: ${error.message}` });
     }
 };
