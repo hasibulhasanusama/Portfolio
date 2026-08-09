@@ -1181,59 +1181,141 @@ window.addEventListener('resize', () => {
     camera.updateProjectionMatrix();
     renderer.setSize(window.innerWidth, window.innerHeight);
 });
-//GEMINI_AI
+// আপনার স্ক্রিনশট থেকে নেওয়া সঠিক API Key
+const GEMINI_API_KEY = "";
+
 document.addEventListener("click", function (e) {
-    if (
-        e.target &&
-        (e.target.id === "aiAskBtn" || e.target.closest("#aiAskBtn"))
-    ) {
-        callGeminiAI();
-    }
+ if (
+ e.target &&
+ (e.target.id === "aiAskBtn" ||
+ e.target.closest("#aiAskBtn"))
+) {
+ callGeminiAI();
+}
 });
 
 document.addEventListener("keypress", function (e) {
-    if (
-        e.key === "Enter" &&
-        document.activeElement &&
-        document.activeElement.id === "aiInput"
-    ) {
-        callGeminiAI();
-    }
+ if (
+e.key === "Enter" &&
+ document.activeElement &&
+ document.activeElement.id === "aiInput"
+ ) {
+ callGeminiAI();
+ }
 });
 
 async function callGeminiAI() {
-    const input = document.getElementById("aiInput");
-    const resultBox = document.getElementById("aiResult");
+const input = document.getElementById("aiInput");
+const resultBox = document.getElementById("aiResult");
 
-    if (!input || !resultBox) return;
+ if (!input || !resultBox) return;
 
-    const userQuery = input.value.trim();
-    if (!userQuery) return;
+const userQuery = input.value.trim();
 
-    resultBox.innerHTML =
-        '<span style="color:#d4af37;">✨ Usama is thinking...</span>';
+ if (!userQuery) return;
 
-    try {
-        // গুগলকে সরাসরি কল না করে আমাদের গোপন ব্যাকএন্ডে কল করা হচ্ছে
-        const response = await fetch("/api/chat", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify({ userQuery })
-        });
+ resultBox.innerHTML =
+ '<span style="color:#d4af37;">✨ Usama is thinking...</span>';
+ const promptContext = `
+You are an AI portfolio assistant for Hasibul Hasan Usama.
 
-        const data = await response.json();
+Portfolio Details:
 
-        if (data.reply) {
-            resultBox.innerHTML = data.reply.replace(/\n/g, "<br>");
-        } else if (data.error) {
-            resultBox.innerHTML = `<span style="color:#ff6b6b;">API Error: ${data.error}</span>`;
-        } else {
-            resultBox.innerHTML = "Sorry, couldn't get a response.";
-        }
-    } catch (error) {
-        console.error("Gemini Error:", error);
-        resultBox.innerHTML = `<span style="color:#ff6b6b;">Error connecting to AI service.</span>`;
-    }
+Name: Hasibul Hasan Usama
+Profession: Software Engineer & 3D Web Developer
+
+Key Skills:
+JavaScript, Three.js, C, CSS, Java, Node.js, HTML,C++
+key Languages: 
+English, Bangla,Arabic,Hindi
+
+Contact:
+Email: hasibulhasanusama@gmail.com
+Phone: +8801708302032
+
+LinkedIn:
+https://linkedin.com/in/hasibul-hasan-usama-1435653b7/
+facebook: 
+https://facebook.com/hasibulhasanosama/ // আপনার লিংক বসাবেন
+whatsapp: 
+https://wa.me/8801708302032/
+github: 
+https://github.com/hasibulhasanusama
+discord: 
+https://discord.com/users/hasibulhasanusama_65967/
+
+
+
+Visitor's Question:
+"${userQuery}"
+
+LANGUAGE RULES:
+1. By default, always answer in English.
+2. If the visitor asks "Bangla te deo", "বাংলায় দাও", "বাংলায় বলো", "Bangla", or clearly requests Bangla, answer completely in Bangla.
+3. If the visitor asks "English e deo", "ইংরেজিতে দাও", "English", or clearly requests English, answer completely in English.
+4. Never mix Bangla and English in the same answer unless the visitor specifically asks for mixed language.
+5. Keep the answer professional, natural, and concise.
+6. Answer in 2-3 sentences.
+7. Only provide information related to this portfolio.
+
+IMPORTANT:
+If the visitor simply asks a normal question without specifying a language, use English.
+`;
+
+try {
+ const response = await fetch(
+ "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent",
+{
+ method: "POST",
+
+ headers: {
+"Content-Type": "application/json",
+"x-goog-api-key": GEMINI_API_KEY
+},
+
+body: JSON.stringify({
+contents: [
+ {
+ parts: [
+ {
+ text: promptContext
+ }
+ ]
+ }
+ ]
+ }) } );
+
+ const data = await response.json();
+
+ console.log("Gemini Response:", data);
+
+ if (
+ data.candidates &&
+  data.candidates[0] &&
+ data.candidates[0].content &&
+ data.candidates[0].content.parts &&
+ data.candidates[0].content.parts[0]
+ ) {
+ const replyText =
+ data.candidates[0].content.parts[0].text;
+
+ resultBox.innerHTML = replyText.replace(/\n/g, "<br>");
+} else if (data.error) {
+resultBox.innerHTML =
+ `<span style="color:#ff6b6b;">
+ API Error: ${data.error.message}
+ </span>`;
+} else {
+resultBox.innerHTML =
+ "Sorry, couldn't get a response.";
+ }
+
+} catch (error) {
+console.error("Gemini Error:", error);
+
+ resultBox.innerHTML =
+ `<span style="color:#ff6b6b;">
+Error connecting to AI service.
+ </span>`;
+ }
 }
