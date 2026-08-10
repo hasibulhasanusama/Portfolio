@@ -180,6 +180,10 @@ scene.background = new THREE.Color(0x1a120c);
 scene.fog = new THREE.FogExp2();
 
 const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
+// ক্যামেরা তৈরির পর এটি বসাবেন
+const isMobile = window.innerWidth < 768;
+camera.fov = isMobile ? 75 : 60; // মোবাইলে ৭৫, পিসিতে ৬০
+camera.updateProjectionMatrix();
 const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
@@ -625,7 +629,6 @@ function createRealWoodTexture() {
         ctx.arc(256 + (Math.random() * 40 - 20), 256 + (Math.random() * 40 - 20), i * 2.5, 0, Math.PI * 2);
         ctx.stroke();
     }
-
     // কাঠের ফাইবার লাইন
     ctx.strokeStyle = 'rgba(15, 8, 3, 0.5)';
     for (let j = 0; j < 80; j++) {
@@ -635,16 +638,13 @@ function createRealWoodTexture() {
         ctx.lineTo(Math.random() * 512, 512);
         ctx.stroke();
     }
-
     const texture = new THREE.CanvasTexture(canvas);
     texture.wrapS = THREE.RepeatWrapping;
     texture.wrapT = THREE.RepeatWrapping;
     return texture;
 }
-
 // গ্লোবাল উড টেক্সচার ইনস্ট্যান্স
 const realWoodTexture = createRealWoodTexture();
-
 /* CROSSED SWORDS & WOODEN SHIELD EMBLEM */
 function createSwordsEmblem(x, y, z, rotY) {
     const group = new THREE.Group();
@@ -757,12 +757,16 @@ controls.target.set(0, 4, -10);
 /* KEYBOARD CONTROLS SYSTEM */
 const keys = { w: false, a: false, s: false, d: false, ArrowUp: false, ArrowDown: false, ArrowLeft: false, ArrowRight: false };
 
-window.addEventListener('keydown', (e) => {
-    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
-    if (keys.hasOwnProperty(e.key.toLowerCase()) || keys.hasOwnProperty(e.key)) {
-        keys[e.key.toLowerCase()] = true;
-        keys[e.key] = true;
-    }
+window.addEventListener('resize', () => {
+    const width = window.innerWidth;
+    const height = window.innerHeight;
+
+    camera.aspect = width / height;
+    camera.fov = width < 768 ? 75 : 60; // স্ক্রিন সাইজ চেঞ্জ হলে স্বয়ংক্রিয়ভাবে এডজাস্ট হবে
+    camera.updateProjectionMatrix();
+
+    renderer.setSize(width, height);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 });
 
 window.addEventListener('keyup', (e) => {
@@ -851,16 +855,36 @@ window.addEventListener('mousemove', (e) => {
     }
 });
 
-window.addEventListener('click', (e) => {
-    if (e.target.closest('header') || e.target.closest('.modal-overlay')) return;
+// পিসি এবং মোবাইল উভয়ের জন্য সঠিক কোঅর্ডিনেট বের করার ফাংশন
+function getPointerPos(event) {
+    const rect = renderer.domElement.getBoundingClientRect();
+    let clientX = event.clientX;
+    let clientY = event.clientY;
 
+    if (event.touches && event.touches.length > 0) {
+        clientX = event.touches[0].clientX;
+        clientY = event.touches[0].clientY;
+    }
+
+    return {
+        x: ((clientX - rect.left) / rect.width) * 2 - 1,
+        y: -((clientY - rect.top) / rect.height) * 2 + 1
+    };
+}
+
+// টাচ বা ক্লিক ইভেন্ট লিসেনার
+window.addEventListener('pointerdown', (event) => {
+    const mouse = getPointerPos(event);
+    const raycaster = new THREE.Raycaster();
     raycaster.setFromCamera(mouse, camera);
-    const intersects = raycaster.intersectObjects(interactiveObjects);
+
+    const intersects = raycaster.intersectObjects(scene.children, true);
 
     if (intersects.length > 0) {
-        const clickedObj = intersects[0].object;
-        const data = clickedObj.userData;
-        if (data.doorId) triggerDoorOpenSequence(clickedObj, data);
+        const clickedObject = intersects[0].object;
+        
+        // এখানে আপনার দরজায় ক্লিক করলে যে ফাংশনটি কল হয় তা বসাবেন
+        // উদাহরণ: openDoor(clickedObject);
     }
 });
 
