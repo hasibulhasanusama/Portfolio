@@ -778,7 +778,7 @@ if (typeof controls !== 'undefined' && controls) {
 
     // Zoom limit
     controls.minDistance = 2;
-    controls.maxDistance = 15;
+    controls.maxDistance = 30;
 }
 /* KEYBOARD CONTROLS SYSTEM (WITH SMOOTH PHYSICS) */
 const keys = { w: false, a: false, s: false, d: false, ArrowUp: false, ArrowDown: false, ArrowLeft: false, ArrowRight: false };
