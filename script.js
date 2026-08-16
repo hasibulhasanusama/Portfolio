@@ -320,7 +320,6 @@ function createProfileCanvas() {
     img.src = PORTFOLIO_DATA.profile.avatarUrl;
     return texture;
 }
-
 /* AMBIENT LIGHTING */
 const ambientLight = new THREE.AmbientLight(0xffffff, 1.0); 
 scene.add(ambientLight);
@@ -744,7 +743,6 @@ function createSwordsEmblem(x, y, z, rotY) {
     group.rotation.y = rotY;
     scene.add(group);
 }
-
 /* ALL WALL EMBLEMS BETWEEN DOORS */
 createSwordsEmblem(0, 5.5, -19.8, 0);
 createSwordsEmblem(19.8, 5.5, 0, -Math.PI / 2);
@@ -754,58 +752,166 @@ createSwordsEmblem(0, 5.5, 19.8, Math.PI);
 camera.position.set(0, 4.5, 0.1);
 controls.target.set(0, 4, -10);
 
-/* KEYBOARD CONTROLS SYSTEM */
+
+/* ORBIT CONTROLS SMOOTHNESS & ZOOM CONFIG */
+ /* ORBIT CONTROLS SMOOTHNESS & ZOOM CONFIG */
+/* ORBIT CONTROLS */
+if (typeof controls !== 'undefined' && controls) {
+
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.035;
+
+    // Pan বন্ধ
+    controls.enablePan = false;
+
+    // Rotate
+    controls.enableRotate = true;
+    controls.rotateSpeed = 0.6;
+
+    // Zoom
+    controls.enableZoom = true;
+    controls.zoomSpeed = 0.8;
+
+    // Camera angle
+    controls.minPolarAngle = 0.1;
+    controls.maxPolarAngle = Math.PI / 1.8;
+
+    // Zoom limit
+    controls.minDistance = 2;
+    controls.maxDistance = 15;
+}
+/* KEYBOARD CONTROLS SYSTEM (WITH SMOOTH PHYSICS) */
 const keys = { w: false, a: false, s: false, d: false, ArrowUp: false, ArrowDown: false, ArrowLeft: false, ArrowRight: false };
+
+const velocity = new THREE.Vector3();
+const targetVelocity = new THREE.Vector3();
 
 window.addEventListener('resize', () => {
     const width = window.innerWidth;
     const height = window.innerHeight;
 
     camera.aspect = width / height;
-    camera.fov = width < 768 ? 75 : 60; // স্ক্রিন সাইজ চেঞ্জ হলে স্বয়ংক্রিয়ভাবে এডজাস্ট হবে
+    camera.fov = width < 768 ? 75 : 60;
     camera.updateProjectionMatrix();
 
     renderer.setSize(width, height);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 });
 
+// কীবোর্ড প্রেস ট্র্যাকিং ইভেন্ট লিসেনার
+window.addEventListener('keydown', (e) => {
+    // ইনপুট ফিল্ডে টাইপ করার সময় কীবোর্ড দিয়ে ক্যামেরা মুভমেন্ট বন্ধ থাকবে
+    if (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA') return;
+
+    const key = e.key.toLowerCase();
+    if (keys.hasOwnProperty(key)) keys[key] = true;
+    if (keys.hasOwnProperty(e.key)) keys[e.key] = true;
+});
+
 window.addEventListener('keyup', (e) => {
-    if (keys.hasOwnProperty(e.key.toLowerCase()) || keys.hasOwnProperty(e.key)) {
-        keys[e.key.toLowerCase()] = false;
-        keys[e.key] = false;
+    const key = e.key.toLowerCase();
+    if (keys.hasOwnProperty(key)) keys[key] = false;
+    if (keys.hasOwnProperty(e.key)) keys[e.key] = false;
+});
+
+// টাচ/মাউস ড্র্যাগ এবং ক্লিকের পার্থক্য নির্ণয়ের ট্র্যাকিং
+let pointerStartX = 0, pointerStartY = 0;
+
+window.addEventListener('pointerdown', (e) => {
+    pointerStartX = e.clientX;
+    pointerStartY = e.clientY;
+});
+
+// মাউস ও টাচ ট্যাপ ইভেন্ট লিসেনার (দরজা খোলার জন্য)
+window.addEventListener('pointerup', (event) => {
+    if (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA') return;
+
+    // ইউজার যদি স্ক্রিন ড্র্যাগ বা স্লাইড করে, তবে দরজা খুলবে না (শুধুমাত্র ডিরেক্ট ট্যাপ/ক্লিকে খুলবে)
+    const deltaX = Math.abs(event.clientX - pointerStartX);
+    const deltaY = Math.abs(event.clientY - pointerStartY);
+    if (deltaX > 8 || deltaY > 8) return;
+
+    const mousePos = getPointerPos(event);
+    const raycaster = new THREE.Raycaster();
+    raycaster.setFromCamera(mousePos, camera);
+
+    const intersects = raycaster.intersectObjects(interactiveObjects, true);
+
+    if (intersects.length > 0) {
+        let clickedObject = intersects[0].object;
+        while (clickedObject && (!clickedObject.userData || !clickedObject.userData.doorId) && clickedObject.parent) {
+            clickedObject = clickedObject.parent;
+        }
+
+        const data = clickedObject ? clickedObject.userData : null;
+        if (data && data.doorId) {
+            triggerDoorOpenSequence(clickedObject, data);
+        }
     }
 });
 
+// স্মুথ কীবোর্ড মুভমেন্ট লজিক (Inertia + Lerp)
 function handleKeyboardMovement() {
-    const moveSpeed = 0.25;
+
+    if (typeof modal !== 'undefined' && modal && modal.classList.contains('active')) {
+        return;
+    }
+
+    const maxSpeed = 0.12;
+    const acceleration = 0.08;
+
     const dir = new THREE.Vector3();
     camera.getWorldDirection(dir);
     dir.y = 0;
     dir.normalize();
 
     const sideDir = new THREE.Vector3(-dir.z, 0, dir.x);
+    const moveDir = new THREE.Vector3();
 
-    if (keys.w || keys.ArrowUp) {
-        camera.position.addScaledVector(dir, moveSpeed);
-        controls.target.addScaledVector(dir, moveSpeed);
+    if (keys.w || keys.ArrowUp) moveDir.add(dir);
+    if (keys.s || keys.ArrowDown) moveDir.sub(dir);
+    if (keys.a || keys.ArrowLeft) moveDir.sub(sideDir);
+    if (keys.d || keys.ArrowRight) moveDir.add(sideDir);
+
+    if (moveDir.lengthSq() > 0) {
+        moveDir.normalize();
+        targetVelocity.copy(moveDir.multiplyScalar(maxSpeed));
+    } else {
+        targetVelocity.set(0, 0, 0);
     }
-    if (keys.s || keys.ArrowDown) {
-        camera.position.addScaledVector(dir, -moveSpeed);
-        controls.target.addScaledVector(dir, -moveSpeed);
-    }
-    if (keys.a || keys.ArrowLeft) {
-        camera.position.addScaledVector(sideDir, -moveSpeed);
-        controls.target.addScaledVector(sideDir, -moveSpeed);
-    }
-    if (keys.d || keys.ArrowRight) {
-        camera.position.addScaledVector(sideDir, moveSpeed);
-        controls.target.addScaledVector(sideDir, moveSpeed);
+
+    velocity.lerp(targetVelocity, acceleration);
+
+    if (velocity.lengthSq() > 0.00001) {
+
+        const nextX = camera.position.x + velocity.x;
+        const nextZ = camera.position.z + velocity.z;
+
+        // Safe distance from walls
+        const minX = -17.0;
+        const maxX = 17.0;
+        const minZ = -17.0;
+        const maxZ = 17.0;
+
+        // X movement
+        if (nextX >= minX && nextX <= maxX) {
+            camera.position.x = nextX;
+            controls.target.x += velocity.x;
+        }
+
+        // Z movement
+        if (nextZ >= minZ && nextZ <= maxZ) {
+            camera.position.z = nextZ;
+            controls.target.z += velocity.z;
+        }
+
+        controls.update();
     }
 }
 
 /* CAMERA NAVIGATION FUNCTION */
 function moveCameraTo(targetKey) {
-    AudioEngine.playClick();
+    if (typeof AudioEngine !== 'undefined') AudioEngine.playClick();
     document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
 
     if (targetKey === 'center') {
@@ -832,30 +938,37 @@ window.addEventListener('mousemove', (e) => {
     mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
 
     raycaster.setFromCamera(mouse, camera);
-    const intersects = raycaster.intersectObjects(interactiveObjects);
+    const intersects = raycaster.intersectObjects(interactiveObjects, true);
 
     if (intersects.length > 0) {
-        const obj = intersects[0].object;
-        const data = obj.userData;
-
-        if (hoveredObject !== obj) {
-            hoveredObject = obj;
-            AudioEngine.playHover();
+        let obj = intersects[0].object;
+        while (obj && (!obj.userData || !obj.userData.doorId) && obj.parent) {
+            obj = obj.parent;
         }
 
-        tooltip.style.display = 'block';
-        tooltip.style.left = e.clientX + 'px';
-        tooltip.style.top = e.clientY + 'px';
-        tooltip.innerHTML = data.doorId === "profile" ? "🖼️ <b>Royal Portrait</b>" : `🚪 Chamber ${data.doorId}: <b>${data.title}</b>`;
-        document.body.style.cursor = 'pointer';
-    } else {
-        hoveredObject = null;
-        tooltip.style.display = 'none';
-        document.body.style.cursor = 'default';
+        if (obj && obj.userData && obj.userData.doorId) {
+            const data = obj.userData;
+            if (hoveredObject !== obj) {
+                hoveredObject = obj;
+                if (typeof AudioEngine !== 'undefined') AudioEngine.playHover();
+            }
+
+            if (tooltip) {
+                tooltip.style.display = 'block';
+                tooltip.style.left = e.clientX + 'px';
+                tooltip.style.top = e.clientY + 'px';
+                tooltip.innerHTML = data.doorId === "profile" ? "🖼️ <b>Royal Portrait</b>" : `🚪 Chamber ${data.doorId}: <b>${data.title}</b>`;
+            }
+            document.body.style.cursor = 'pointer';
+            return;
+        }
     }
+
+    hoveredObject = null;
+    if (tooltip) tooltip.style.display = 'none';
+    document.body.style.cursor = 'default';
 });
 
-// পিসি এবং মোবাইল উভয়ের জন্য সঠিক কোঅর্ডিনেট বের করার ফাংশন
 function getPointerPos(event) {
     const rect = renderer.domElement.getBoundingClientRect();
     let clientX = event.clientX;
@@ -872,35 +985,19 @@ function getPointerPos(event) {
     };
 }
 
-// টাচ বা ক্লিক ইভেন্ট লিসেনার
-window.addEventListener('pointerdown', (event) => {
-    const mouse = getPointerPos(event);
-    const raycaster = new THREE.Raycaster();
-    raycaster.setFromCamera(mouse, camera);
-
-    const intersects = raycaster.intersectObjects(scene.children, true);
-
-    if (intersects.length > 0) {
-        const clickedObject = intersects[0].object;
-        
-        // এখানে আপনার দরজায় ক্লিক করলে যে ফাংশনটি কল হয় তা বসাবেন
-        // উদাহরণ: openDoor(clickedObject);
-    }
-});
-
 function triggerDoorOpenSequence(obj, data) {
-    AudioEngine.playClick();
+    if (typeof AudioEngine !== 'undefined') AudioEngine.playClick();
 
     gsap.to(camera.position, { duration: 1.5, x: data.camPos[0], y: data.camPos[1], z: data.camPos[2], ease: "power2.inOut" });
     gsap.to(controls.target, { duration: 1.5, x: data.camTarget[0], y: data.camTarget[1], z: data.camTarget[2], ease: "power2.inOut" });
 
-    if (activeOpenDoor && activeOpenDoor !== data.pivot) {
+    if (typeof activeOpenDoor !== 'undefined' && activeOpenDoor && activeOpenDoor !== data.pivot) {
         gsap.to(activeOpenDoor.rotation, { duration: 0.6, y: 0 });
     }
 
     if (data.pivot) {
         activeOpenDoor = data.pivot;
-        AudioEngine.playDoorOpen();
+        if (typeof AudioEngine !== 'undefined') AudioEngine.playDoorOpen();
         gsap.to(data.pivot.rotation, {
             duration: 1.0, y: -Math.PI / 2.2, ease: "power2.out", delay: 0.4,
             onComplete: () => showModal(data.doorId)
@@ -964,264 +1061,131 @@ function showModal(doorId) {
                     `).join('')}
                 </div>
             `;
-   } else if (doorId === "103") {
-    modalBody.innerHTML = `
-        <div style="display: flex; gap: 24px; flex-wrap: wrap;">
-            
-            <!-- Technical Skills Section -->
-            <div style="flex: 2; min-width: 280px;">
-                <h3 style="color: var(--gold-primary); font-size: 1rem; letter-spacing: 1px; margin-bottom: 12px; border-bottom: 1px dashed rgba(212, 175, 55, 0.3); padding-bottom: 6px;">TECHNICAL SKILLS</h3>
-                <!-- grid-template-columns inline style যোগ করা হয়েছে যেন সব কার্ড দেখায় -->
-                <div class="grid-layout" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px;">
-                    ${(info.skills || []).map(s => `
-                        <div class="info-card">
-                            <h4>${s.name}</h4>
-                            <p style="color:var(--gold-primary); font-weight:700;">Proficiency: ${s.level}%</p>
+        } else if (doorId === "103") {
+            modalBody.innerHTML = `
+                <div style="display: flex; gap: 24px; flex-wrap: wrap;">
+                    <div style="flex: 2; min-width: 280px;">
+                        <h3 style="color: var(--gold-primary); font-size: 1rem; letter-spacing: 1px; margin-bottom: 12px; border-bottom: 1px dashed rgba(212, 175, 55, 0.3); padding-bottom: 6px;">TECHNICAL SKILLS</h3>
+                        <div class="grid-layout" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px;">
+                            ${(info.skills || []).map(s => `
+                                <div class="info-card">
+                                    <h4>${s.name}</h4>
+                                    <p style="color:var(--gold-primary); font-weight:700;">Proficiency: ${s.level}%</p>
+                                </div>
+                            `).join('')}
                         </div>
-                    `).join('')}
+                    </div>
+                    <div style="flex: 1; min-width: 200px;">
+                        <h3 style="color: var(--gold-primary); font-size: 1rem; letter-spacing: 1px; margin-bottom: 12px; border-bottom: 1px dashed rgba(212, 175, 55, 0.3); padding-bottom: 6px;">LANGUAGES</h3>
+                        <div class="grid-layout" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px;">
+                            ${(info.languages || []).map(l => `
+                                <div class="info-card">
+                                    <h4>${l.name}</h4>
+                                    <p style="color:var(--gold-primary); font-weight:700;">Proficiency: ${l.level}%</p>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
                 </div>
-            </div>
-
-            <!-- Languages Section -->
-            <div style="flex: 1; min-width: 200px;">
-                <h3 style="color: var(--gold-primary); font-size: 1rem; letter-spacing: 1px; margin-bottom: 12px; border-bottom: 1px dashed rgba(212, 175, 55, 0.3); padding-bottom: 6px;">LANGUAGES</h3>
-                <div class="grid-layout" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px;">
-                    ${(info.languages || []).map(l => `
-                        <div class="info-card">
-                            <h4>${l.name}</h4>
-                            <p style="color:var(--gold-primary); font-weight:700;">Proficiency: ${l.level}%</p>
-                        </div>
-                    `).join('')}
-                </div>
-            </div>
-
-        </div>
-    `;
-} else if (doorId === "104") {
-    modalBody.innerHTML = `
-        <div class="awards-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px;">
-            ${(info.awards || []).map((a) => {
-                const imgList = a.images || (a.image ? [a.image] : []);
-                const hasMultiple = imgList.length > 1;
-
-                return `
-                    <div class="award-card" style="border: 1px solid rgba(212, 175, 55, 0.4); border-radius: 8px; padding: 16px; background: rgba(255, 255, 255, 0.02); display: flex; flex-direction: column; gap: 12px;">
-                        
-                        <!-- Text Info -->
-                        <div>
-                            <h4 style="color: #f2e3c6; font-size: 1.05rem; letter-spacing: 0.5px; margin-bottom: 6px; text-transform: uppercase;">${a.title}</h4>
-                            <p style="color: var(--gold-primary, #d4af37); font-size: 0.85rem; opacity: 0.9;">${a.subtitle}</p>
-                        </div>
-
-                        <!-- Image Carousel Container -->
-                        <div class="carousel-container" style="position: relative; width: 100%; height: 180px; border-radius: 6px; overflow: hidden; border: 1px solid rgba(212, 175, 55, 0.2);">
-                            
-                            <!-- Previous Arrow Button (শুরুতে হাইড থাকবে) -->
-                            ${hasMultiple ? `
-                                <button class="prev-btn" onclick="slideCarousel(this, -1)" style="display: none; position: absolute; left: 8px; top: 50%; transform: translateY(-50%); z-index: 10; background: rgba(0, 0, 0, 0.7); color: var(--gold-primary, #d4af37); border: 1px solid rgba(212, 175, 55, 0.5); border-radius: 50%; width: 28px; height: 28px; cursor: pointer; align-items: center; justify-content: center; font-size: 14px;">❮</button>
-                            ` : ''}
-
-                            <!-- Image Track -->
-                            <div class="carousel-track" onscroll="handleCarouselScroll(this)" style="display: flex; width: 100%; height: 100%; overflow-x: auto; scroll-snap-type: x mandatory; scroll-behavior: smooth; scrollbar-width: none; -ms-overflow-style: none;">
-                                ${imgList.map(imgSrc => `
-                                    <div style="flex: 0 0 100%; width: 100%; height: 100%; scroll-snap-align: start; background: #000;">
-                                        <img src="${imgSrc}" alt="${a.title}" style="width: 100%; height: 100%; object-fit: cover;">
+            `;
+        } else if (doorId === "104") {
+            modalBody.innerHTML = `
+                <div class="awards-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px;">
+                    ${(info.awards || []).map((a) => {
+                        const imgList = a.images || (a.image ? [a.image] : []);
+                        const hasMultiple = imgList.length > 1;
+                        return `
+                            <div class="award-card" style="border: 1px solid rgba(212, 175, 55, 0.4); border-radius: 8px; padding: 16px; background: rgba(255, 255, 255, 0.02); display: flex; flex-direction: column; gap: 12px;">
+                                <div>
+                                    <h4 style="color: #f2e3c6; font-size: 1.05rem; letter-spacing: 0.5px; margin-bottom: 6px; text-transform: uppercase;">${a.title}</h4>
+                                    <p style="color: var(--gold-primary, #d4af37); font-size: 0.85rem; opacity: 0.9;">${a.subtitle}</p>
+                                </div>
+                                <div class="carousel-container" style="position: relative; width: 100%; height: 180px; border-radius: 6px; overflow: hidden; border: 1px solid rgba(212, 175, 55, 0.2);">
+                                    ${hasMultiple ? `<button class="prev-btn" onclick="slideCarousel(this, -1)" style="display: none; position: absolute; left: 8px; top: 50%; transform: translateY(-50%); z-index: 10; background: rgba(0, 0, 0, 0.7); color: var(--gold-primary, #d4af37); border: 1px solid rgba(212, 175, 55, 0.5); border-radius: 50%; width: 28px; height: 28px; cursor: pointer; align-items: center; justify-content: center; font-size: 14px;">❮</button>` : ''}
+                                    <div class="carousel-track" onscroll="handleCarouselScroll(this)" style="display: flex; width: 100%; height: 100%; overflow-x: auto; scroll-snap-type: x mandatory; scroll-behavior: smooth; scrollbar-width: none; -ms-overflow-style: none;">
+                                        ${imgList.map(imgSrc => `
+                                            <div style="flex: 0 0 100%; width: 100%; height: 100%; scroll-snap-align: start; background: #000;">
+                                                <img src="${imgSrc}" alt="${a.title}" style="width: 100%; height: 100%; object-fit: cover;">
+                                            </div>
+                                        `).join('')}
                                     </div>
-                                `).join('')}
+                                    ${hasMultiple ? `<button class="next-btn" onclick="slideCarousel(this, 1)" style="display: flex; position: absolute; right: 8px; top: 50%; transform: translateY(-50%); z-index: 10; background: rgba(0, 0, 0, 0.7); color: var(--gold-primary, #d4af37); border: 1px solid rgba(212, 175, 55, 0.5); border-radius: 50%; width: 28px; height: 28px; cursor: pointer; align-items: center; justify-content: center; font-size: 14px;">❯</button>` : ''}
+                                </div>
                             </div>
-
-                            <!-- Next Arrow Button (একাধিক ছবি থাকলে শুরুতে শো থাকবে) -->
-                            ${hasMultiple ? `
-                                <button class="next-btn" onclick="slideCarousel(this, 1)" style="display: flex; position: absolute; right: 8px; top: 50%; transform: translateY(-50%); z-index: 10; background: rgba(0, 0, 0, 0.7); color: var(--gold-primary, #d4af37); border: 1px solid rgba(212, 175, 55, 0.5); border-radius: 50%; width: 28px; height: 28px; cursor: pointer; align-items: center; justify-content: center; font-size: 14px;">❯</button>
-                            ` : ''}
-
-                        </div>
-
-                    </div>
-                `;
-            }).join('')}
-        </div>
-    `;
-} else if (doorId === "106") {
-    modalBody.innerHTML = `
-        <div style="display: flex; flex-direction: column; gap: 15px; font-family: 'Plus Jakarta Sans', sans-serif;">
-            
-            <p style="color: #a0a0a0; font-size: 0.9rem; margin: 0;">
-                Ask anything about Hasibul's skills, experience, or contact details!
-            </p>
-
-            <!-- Search Input Group -->
-            <div style="display: flex; gap: 10px; width: 100%;">
-                <input type="text" id="aiInput" placeholder="e.g. What are his main skills?" 
-                    style="flex: 1; padding: 12px 16px; background: rgba(0, 0, 0, 0.6); border: 1px solid rgba(212, 175, 55, 0.4); border-radius: 8px; color: #fff; font-size: 0.9rem; outline: none; transition: 0.3s;"
-                    onfocus="this.style.borderColor='#d4af37'" onblur="this.style.borderColor='rgba(212, 175, 55, 0.4)'"
-                />
-                
-                <button id="aiAskBtn" type="button" 
-                    style="padding: 12px 24px; background: linear-gradient(135deg, #d4af37 0%, #aa820a 100%); border: none; border-radius: 8px; color: #000; font-weight: 700; cursor: pointer; font-size: 0.9rem; white-space: nowrap; transition: 0.3s;"
-                    onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'">
-                    <i class="fa-solid fa-paper-plane" style="margin-right: 5px;"></i> Ask AI
-                </button>
-            </div>
-
-            <!-- Response Display Area -->
-            <div id="aiResult" 
-                style="background: rgba(15, 14, 12, 0.8); border: 1px solid rgba(212, 175, 55, 0.2); border-radius: 8px; padding: 16px; min-height: 90px; color: #e1e1e6; font-size: 0.92rem; line-height: 1.6;">
-                <span style="color: #777; font-style: italic;">Response will appear here...</span>
-            </div>
-
-        </div>
-    `;
-} else if (doorId === "105"){
-    const mapUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(info.location)}`;
-
-    modalBody.innerHTML = `
-        <div style="display: flex; gap: 20px; flex-wrap: wrap; align-items: stretch;">
-            
-            <!-- Left Side: Contact Details & Social Icons -->
-            <div style="flex: 1; min-width: 280px; border: 1px solid rgba(212, 175, 55, 0.3); border-radius: 8px; padding: 20px; background: rgba(0, 0, 0, 0.2); display: flex; flex-direction: column; justify-content: space-between; gap: 20px;">
-                
-                <div style="display: flex; flex-direction: column; gap: 16px; color: #f2e3c6; font-size: 0.95rem;">
-                    
-                    <!-- Email -->
-                    <div style="display: flex; align-items: flex-start; gap: 12px;">
-                        <i class="fa-regular fa-envelope" style="color: #d4af37; font-size: 1.1rem; margin-top: 3px;"></i>
-                        <div style="display: flex; flex-direction: column; gap: 2px;">
-                            <strong style="color: #ffffff; font-size: 0.9rem;">Email:</strong>
-                            <span style="color: #d4d4d4; word-break: break-all;">${info.email}</span>
-                        </div>
-                    </div>
-
-                    <!-- Phone -->
-                    <div style="display: flex; align-items: center; gap: 12px;">
-                        <i class="fa-solid fa-phone" style="color: #d4af37; font-size: 1rem;"></i>
-                        <div style="display: flex; align-items: center; gap: 6px;">
-                            <strong style="color: #ffffff; font-size: 0.9rem;">Phone:</strong>
-                            <span style="color: #d4d4d4;">${info.phone}</span>
-                        </div>
-                    </div>
-
-                    <!-- Location -->
-                    <div style="display: flex; flex-direction: column; gap: 8px;">
-                        <div style="display: flex; align-items: center; gap: 12px;">
-                            <i class="fa-solid fa-location-dot" style="color: #d4af37; font-size: 1.1rem;"></i>
-                            <strong style="color: #ffffff; font-size: 0.9rem;">Location:</strong>
-                        </div>
-                        
-                        <!-- Clickable Location Box -->
-                        <a href="${mapUrl}" target="_blank" title="Click to view on Google Maps" style="display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; background: rgba(212, 175, 55, 0.08); border: 1px solid rgba(212, 175, 55, 0.4); border-radius: 6px; color: #f2e3c6; text-decoration: none; transition: all 0.3s ease;" onmouseover="this.style.background='rgba(212, 175, 55, 0.2)'; this.style.borderColor='#d4af37';" onmouseout="this.style.background='rgba(212, 175, 55, 0.08)'; this.style.borderColor='rgba(212, 175, 55, 0.4)';">
-                            <span style="font-size: 0.88rem; font-weight: 500; color: #e5e5e5;">${info.location}</span>
-                            <span style="color: #d4af37; font-size: 0.85rem; font-weight: bold; display: flex; align-items: center; gap: 4px;">Map <i class="fa-solid fa-arrow-up-right-from-square" style="font-size: 0.75rem;"></i></span>
-                        </a>
-                    </div>
-
+                        `;
+                    }).join('')}
                 </div>
-
-                <!-- Social Icons Section -->
-                <div style="border-top: 1px dashed rgba(212, 175, 55, 0.3); padding-top: 16px;">
-                    <h4 style="color: #d4af37; font-size: 0.85rem; letter-spacing: 1px; margin-bottom: 12px; text-transform: uppercase;">Connect With Me</h4>
-                    <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-                        
-                        <!-- Facebook -->
-                        <a href="${info.facebook}" target="_blank" title="Facebook" style="width: 38px; height: 38px; border-radius: 50%; border: 1px solid rgba(212, 175, 55, 0.4); display: flex; align-items: center; justify-content: center; color: #d4af37; text-decoration: none; transition: 0.3s; background: rgba(212, 175, 55, 0.05);" onmouseover="this.style.background='#d4af37'; this.style.color='#000';" onmouseout="this.style.background='rgba(212, 175, 55, 0.05)'; this.style.color='#d4af37';">
-                            <i class="fa-brands fa-facebook-f" style="font-size: 1rem;"></i>
-                        </a>
-
-                        <!-- WhatsApp -->
-                        <a href="${info.whatsapp}" target="_blank" title="WhatsApp" style="width: 38px; height: 38px; border-radius: 50%; border: 1px solid rgba(212, 175, 55, 0.4); display: flex; align-items: center; justify-content: center; color: #d4af37; text-decoration: none; transition: 0.3s; background: rgba(212, 175, 55, 0.05);" onmouseover="this.style.background='#d4af37'; this.style.color='#000';" onmouseout="this.style.background='rgba(212, 175, 55, 0.05)'; this.style.color='#d4af37';">
-                            <i class="fa-brands fa-whatsapp" style="font-size: 1.1rem;"></i>
-                        </a>
-
-                        <!-- LinkedIn -->
-                        <a href="${info.linkedin}" target="_blank" title="LinkedIn" style="width: 38px; height: 38px; border-radius: 50%; border: 1px solid rgba(212, 175, 55, 0.4); display: flex; align-items: center; justify-content: center; color: #d4af37; text-decoration: none; transition: 0.3s; background: rgba(212, 175, 55, 0.05);" onmouseover="this.style.background='#d4af37'; this.style.color='#000';" onmouseout="this.style.background='rgba(212, 175, 55, 0.05)'; this.style.color='#d4af37';">
-                            <i class="fa-brands fa-linkedin-in" style="font-size: 1rem;"></i>
-                        </a>
-
-                        <!-- Discord -->
-                        <a href="${info.discord}" target="_blank" title="Discord" style="width: 38px; height: 38px; border-radius: 50%; border: 1px solid rgba(212, 175, 55, 0.4); display: flex; align-items: center; justify-content: center; color: #d4af37; text-decoration: none; transition: 0.3s; background: rgba(212, 175, 55, 0.05);" onmouseover="this.style.background='#d4af37'; this.style.color='#000';" onmouseout="this.style.background='rgba(212, 175, 55, 0.05)'; this.style.color='#d4af37';">
-                            <i class="fa-brands fa-discord" style="font-size: 1rem;"></i>
-                        </a>
-
-                        <!-- GitHub -->
-                        <a href="${info.github}" target="_blank" title="GitHub" style="width: 38px; height: 38px; border-radius: 50%; border: 1px solid rgba(212, 175, 55, 0.4); display: flex; align-items: center; justify-content: center; color: #d4af37; text-decoration: none; transition: 0.3s; background: rgba(212, 175, 55, 0.05);" onmouseover="this.style.background='#d4af37'; this.style.color='#000';" onmouseout="this.style.background='rgba(212, 175, 55, 0.05)'; this.style.color='#d4af37';">
-                            <i class="fa-brands fa-github" style="font-size: 1rem;"></i>
-                        </a>
-
+            `;
+        } else if (doorId === "106") {
+            modalBody.innerHTML = `
+                <div style="display: flex; flex-direction: column; gap: 15px; font-family: 'Plus Jakarta Sans', sans-serif;">
+                    <p style="color: #a0a0a0; font-size: 0.9rem; margin: 0;">Ask anything about Hasibul's skills, experience, or contact details!</p>
+                    <div style="display: flex; gap: 10px; width: 100%;">
+                        <input type="text" id="aiInput" placeholder="e.g. What are his main skills?" style="flex: 1; padding: 12px 16px; background: rgba(0, 0, 0, 0.6); border: 1px solid rgba(212, 175, 55, 0.4); border-radius: 8px; color: #fff; font-size: 0.9rem; outline: none; transition: 0.3s;"/>
+                        <button id="aiAskBtn" type="button" style="padding: 12px 24px; background: linear-gradient(135deg, #d4af37 0%, #aa820a 100%); border: none; border-radius: 8px; color: #000; font-weight: 700; cursor: pointer; font-size: 0.9rem; white-space: nowrap; transition: 0.3s;"><i class="fa-solid fa-paper-plane" style="margin-right: 5px;"></i> Ask AI</button>
+                    </div>
+                    <div id="aiResult" style="background: rgba(15, 14, 12, 0.8); border: 1px solid rgba(212, 175, 55, 0.2); border-radius: 8px; padding: 16px; min-height: 90px; color: #e1e1e6; font-size: 0.92rem; line-height: 1.6;">
+                        <span style="color: #777; font-style: italic;">Response will appear here...</span>
                     </div>
                 </div>
-
-            </div>
-
-            <!-- Right Side: Direct Message Form -->
-            <div style="flex: 1.2; min-width: 280px; border: 1px solid rgba(212, 175, 55, 0.3); border-radius: 8px; padding: 20px; background: rgba(0, 0, 0, 0.2);">
-                <h4 style="color: #d4af37; font-size: 0.9rem; letter-spacing: 1px; margin-bottom: 14px; text-transform: uppercase;">Send Direct Message</h4>
-                
-                <form onsubmit="event.preventDefault(); window.location.href='mailto:${info.email}?subject=Message from ' + encodeURIComponent(this.name.value) + '&body=' + encodeURIComponent(this.message.value + '\n\nSender Email: ' + this.email.value);" style="display: flex; flex-direction: column; gap: 10px;">
-                    <input type="text" name="name" placeholder="Your Name" required style="width: 100%; padding: 10px; background: rgba(0,0,0,0.5); border: 1px solid rgba(212, 175, 55, 0.3); border-radius: 6px; color: #f2e3c6; outline: none; font-size: 0.85rem;" onfocus="this.style.borderColor='#d4af37'" onblur="this.style.borderColor='rgba(212, 175, 55, 0.3)'">
-                    
-                    <input type="email" name="email" placeholder="Your Email" required style="width: 100%; padding: 10px; background: rgba(0,0,0,0.5); border: 1px solid rgba(212, 175, 55, 0.3); border-radius: 6px; color: #f2e3c6; outline: none; font-size: 0.85rem;" onfocus="this.style.borderColor='#d4af37'" onblur="this.style.borderColor='rgba(212, 175, 55, 0.3)'">
-                    
-                    <textarea name="message" rows="3" placeholder="Your Message" required style="width: 100%; padding: 10px; background: rgba(0,0,0,0.5); border: 1px solid rgba(212, 175, 55, 0.3); border-radius: 6px; color: #f2e3c6; outline: none; resize: vertical; font-size: 0.85rem;" onfocus="this.style.borderColor='#d4af37'" onblur="this.style.borderColor='rgba(212, 175, 55, 0.3)'"></textarea>
-                    
-                    <button type="submit" style="background: #d4af37; color: #000; font-weight: bold; padding: 10px; border: none; border-radius: 6px; cursor: pointer; transition: 0.3s; font-size: 0.85rem; letter-spacing: 0.5px;" onmouseover="this.style.opacity='0.85'" onmouseout="this.style.opacity='1'">
-                        SEND MESSAGE ➔
-                    </button>
-                </form>
-            </div>
-
-        </div>
-    `;
-}
+            `;
+        } else if (doorId === "105"){
+            const mapUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(info.location)}`;
+            modalBody.innerHTML = `
+                <div style="display: flex; gap: 20px; flex-wrap: wrap; align-items: stretch;">
+                    <div style="flex: 1; min-width: 280px; border: 1px solid rgba(212, 175, 55, 0.3); border-radius: 8px; padding: 20px; background: rgba(0, 0, 0, 0.2); display: flex; flex-direction: column; justify-content: space-between; gap: 20px;">
+                        <div style="display: flex; flex-direction: column; gap: 16px; color: #f2e3c6; font-size: 0.95rem;">
+                            <div style="display: flex; align-items: flex-start; gap: 12px;">
+                                <i class="fa-regular fa-envelope" style="color: #d4af37; font-size: 1.1rem; margin-top: 3px;"></i>
+                                <div style="display: flex; flex-direction: column; gap: 2px;">
+                                    <strong style="color: #ffffff; font-size: 0.9rem;">Email:</strong>
+                                    <span style="color: #d4d4d4; word-break: break-all;">${info.email}</span>
+                                </div>
+                            </div>
+                            <div style="display: flex; align-items: center; gap: 12px;">
+                                <i class="fa-solid fa-phone" style="color: #d4af37; font-size: 1rem;"></i>
+                                <div style="display: flex; align-items: center; gap: 6px;">
+                                    <strong style="color: #ffffff; font-size: 0.9rem;">Phone:</strong>
+                                    <span style="color: #d4d4d4;">${info.phone}</span>
+                                </div>
+                            </div>
+                            <div style="display: flex; flex-direction: column; gap: 8px;">
+                                <div style="display: flex; align-items: center; gap: 12px;">
+                                    <i class="fa-solid fa-location-dot" style="color: #d4af37; font-size: 1.1rem;"></i>
+                                    <strong style="color: #ffffff; font-size: 0.9rem;">Location:</strong>
+                                </div>
+                                <a href="${mapUrl}" target="_blank" style="display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; background: rgba(212, 175, 55, 0.08); border: 1px solid rgba(212, 175, 55, 0.4); border-radius: 6px; color: #f2e3c6; text-decoration: none;">
+                                    <span style="font-size: 0.88rem; font-weight: 500; color: #e5e5e5;">${info.location}</span>
+                                    <span style="color: #d4af37; font-size: 0.85rem; font-weight: bold;">Map <i class="fa-solid fa-arrow-up-right-from-square"></i></span>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
     }
     modal.classList.add('active');
 }
 
 function closeModal() {
-    AudioEngine.playClick();
+    if (typeof AudioEngine !== 'undefined') AudioEngine.playClick();
     modal.classList.remove('active');
-    if (activeOpenDoor) {
+    if (typeof activeOpenDoor !== 'undefined' && activeOpenDoor) {
         gsap.to(activeOpenDoor.rotation, { duration: 0.8, y: 0 });
         activeOpenDoor = null;
     }
 }
 
-/* RENDER LOOP */
-function animate() {
-    requestAnimationFrame(animate);
-
-    handleKeyboardMovement();
-
-    camera.position.x = Math.max(-18, Math.min(18, camera.position.x));
-    camera.position.z = Math.max(-18, Math.min(18, camera.position.z));
-    camera.position.y = Math.max(1, Math.min(10, camera.position.y));
-
-    controls.update();
-    renderer.render(scene, camera);
-}
-animate();
-
-window.addEventListener('resize', () => {
-    camera.aspect = window.innerWidth / window.innerHeight;
-    camera.updateProjectionMatrix();
-    renderer.setSize(window.innerWidth, window.innerHeight);
-});
-// আপনার স্ক্রিনশট থেকে নেওয়া সঠিক API Key
+/* AI INTEGRATION SYSTEM */
 document.addEventListener("click", function (e) {
-    if (
-        e.target &&
-        (e.target.id === "aiAskBtn" ||
-            e.target.closest("#aiAskBtn"))
-    ) {
+    if (e.target && (e.target.id === "aiAskBtn" || e.target.closest("#aiAskBtn"))) {
         callGeminiAI();
     }
 });
 
 document.addEventListener("keypress", function (e) {
-    if (
-        e.key === "Enter" &&
-        document.activeElement &&
-        document.activeElement.id === "aiInput"
-    ) {
+    if (e.key === "Enter" && document.activeElement && document.activeElement.id === "aiInput") {
         callGeminiAI();
     }
 });
@@ -1233,7 +1197,6 @@ async function callGeminiAI() {
     if (!input || !resultBox) return;
 
     const userQuery = input.value.trim();
-
     if (!userQuery) return;
 
     resultBox.innerHTML = "✨ Usama is thinking...";
@@ -1242,7 +1205,6 @@ async function callGeminiAI() {
 You are an AI portfolio assistant for Hasibul Hasan Usama.
 
 Portfolio Details:
-
 Name: Hasibul Hasan Usama
 Profession: Software Engineer & 3D Web Developer
 
@@ -1256,26 +1218,16 @@ Contact:
 Email: hasibulhasanusama@gmail.com
 Phone: +8801708302032
 
-LinkedIn:
-https://linkedin.com/in/hasibul-hasan-usama-1435653b7/
-
-Facebook:
-https://facebook.com/hasibulhasanosama/
-
-WhatsApp:
-https://wa.me/8801708302032/
-
-GitHub:
-https://github.com/hasibulhasanusama
-
-Discord:
-https://discord.com/users/hasibulhasanusama_65967/
+LinkedIn: https://linkedin.com/in/hasibul-hasan-usama-1435653b7/
+Facebook: https://facebook.com/hasibulhasanosama/
+WhatsApp: https://wa.me/8801708302032/
+GitHub: https://github.com/hasibulhasanusama
+Discord: https://discord.com/users/hasibulhasanusama_65967/
 
 Visitor's Question:
 "${userQuery}"
 
 LANGUAGE RULES:
-
 1. By default, always answer in English.
 2. If the visitor asks "Bangla te deo", "বাংলায় দাও", "বাংলায় বলো", "Bangla", or clearly requests Bangla, answer completely in Bangla.
 3. If the visitor asks "English e deo", "ইংরেজিতে দাও", "English", or clearly requests English, answer completely in English.
@@ -1283,21 +1235,14 @@ LANGUAGE RULES:
 5. Keep the answer professional, natural, and concise.
 6. Answer in 2-3 sentences.
 7. Only provide information related to this portfolio.
-
-IMPORTANT:
-If the visitor simply asks a normal question without specifying a language, use English.
 `;
 
     try {
-        // Send the request to your Vercel backend
-        // The API key is NOT stored in this frontend file.
         const response = await fetch("/api/chat", {
             method: "POST",
-
             headers: {
                 "Content-Type": "application/json"
             },
-
             body: JSON.stringify({
                 userQuery: promptContext
             })
@@ -1305,29 +1250,42 @@ If the visitor simply asks a normal question without specifying a language, use 
 
         const data = await response.json();
 
-        console.log("AI Response:", data);
-
         if (!response.ok) {
-            resultBox.innerHTML =
-                `<span style="color:#ff6b6b;">
-                    API Error: ${data.error || "Something went wrong."}
-                </span>`;
+            resultBox.innerHTML = `<span style="color:#ff6b6b;">API Error: ${data.error || "Something went wrong."}</span>`;
             return;
         }
 
         if (data.reply) {
             resultBox.innerHTML = data.reply.replace(/\n/g, "<br>");
         } else {
-            resultBox.innerHTML =
-                "Sorry, couldn't get a response.";
+            resultBox.innerHTML = "Sorry, couldn't get a response.";
         }
 
     } catch (error) {
         console.error("AI Error:", error);
-
-        resultBox.innerHTML =
-            `<span style="color:#ff6b6b;">
-                Error connecting to AI service.
-            </span>`;
+        resultBox.innerHTML = `<span style="color:#ff6b6b;">Error connecting to AI service.</span>`;
     }
 }
+
+/* MASTER RENDER LOOP */
+function animate() {
+    requestAnimationFrame(animate);
+
+    // ১. কীবোর্ড ইনপুট প্রসেস (Smooth Inertia Movement)
+    handleKeyboardMovement();
+
+    // ২. রুমের বাউন্ডারি লিমিট (দেওয়াল পার হওয়া আটকাবে)
+// ৩. রুমের বাউন্ডারি লিমিট (সীমানা বাড়িয়ে দেওয়া হলো যাতে সহজে ঘুরে যেতে পারে)
+    camera.position.x = Math.max(-35, Math.min(35, camera.position.x));
+    camera.position.z = Math.max(-35, Math.min(35, camera.position.z));
+    camera.position.y = Math.max(0.5, Math.min(12, camera.position.y));
+
+    // ৩. রেন্ডারার ও অরবিট কন্ট্রোল আপডেট (Smooth Drag / Zoom Damping Update)
+    if (typeof controls !== 'undefined' && controls) {
+        controls.update();
+    }
+    renderer.render(scene, camera);
+}
+
+// অ্যানিমেশন চালুকরণ
+animate();
