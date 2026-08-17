@@ -89,7 +89,7 @@ const PORTFOLIO_DATA = {
         name: "Imtiaz Khandoker",
         title: "SOFTWARE ENGINEER & 3D WEB DEVELOPER",
         avatarUrl:"https://scontent.fdac138-2.fna.fbcdn.net/v/t39.30808-6/764661125_1814656906386765_1344996224163794065_n.jpg?stp=dst-jpg_tt6&cstp=mx2014x2048&ctp=s2014x2048&_nc_cat=105&ccb=1-7&_nc_sid=6ee11a&_nc_ohc=ZpCnOAF8p7oQ7kNvwHy6QPp&_nc_oc=AdrP32L1x0DDw3TV_i9kZrqX44maliqJcpIXw-K0Ce4gxMqzU5S24jeoubkDR8AywBI&_nc_zt=23&_nc_ht=scontent.fdac138-2.fna&_nc_gid=MQUlPoCBaZDH6EnSbHwqLg&_nc_ss=7b2a8&oh=00_AQFw3xrNijMlAtwjeW2l22AyCX8yDO2Z8oSgvrmi-CC93A&oe=6A87FFB8",
-        cvUrl: "#",
+        cvUrl: "Imtiaz Resume.pdf",
         bio: "Crafting immersive 3D spatial experiences, Gothic architectural rendering, and next-gen interactive web environments."
     },
     101: {
