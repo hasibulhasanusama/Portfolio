@@ -86,27 +86,39 @@ let activeOpenDoor = null;
 
 const PORTFOLIO_DATA = {
     profile: {
-        name: "Imtiaz Khandoker",
+        name: "Hasibul Hasan Usama",
         title: "SOFTWARE ENGINEER & 3D WEB DEVELOPER",
-        avatarUrl:"https://scontent.fdac138-2.fna.fbcdn.net/v/t39.30808-6/764661125_1814656906386765_1344996224163794065_n.jpg?stp=dst-jpg_tt6&cstp=mx2014x2048&ctp=s2014x2048&_nc_cat=105&ccb=1-7&_nc_sid=6ee11a&_nc_ohc=ZpCnOAF8p7oQ7kNvwHy6QPp&_nc_oc=AdrP32L1x0DDw3TV_i9kZrqX44maliqJcpIXw-K0Ce4gxMqzU5S24jeoubkDR8AywBI&_nc_zt=23&_nc_ht=scontent.fdac138-2.fna&_nc_gid=MQUlPoCBaZDH6EnSbHwqLg&_nc_ss=7b2a8&oh=00_AQFw3xrNijMlAtwjeW2l22AyCX8yDO2Z8oSgvrmi-CC93A&oe=6A87FFB8",
-        cvUrl: "Imtiaz Resume.pdf",
+        avatarUrl:"https://media.licdn.com/dms/image/v2/D4E03AQGGpgDDWnm8Xg/profile-displayphoto-crop_800_800/B4EZz4Hh1mHsAI-/0/1773689251977?e=1789603200&v=beta&t=1g1pzQlN1Jrz-AsDLuhJvq5fb7G0d-6zmUZ1LfJhT6g",
+        cvUrl: "HasinulHasanUsama.pdf",
         bio: "Crafting immersive 3D spatial experiences, Gothic architectural rendering, and next-gen interactive web environments."
     },
     101: {
         title: "About Me & Career",
-        desc: "Over 8 years of engineering high-performance WebGL 3D scenes for web and spatial computing.",
-        experience: [
-            { role: "Lead 3D Architect", company: "Vanguard Spatial", years: "2021 - Present", desc: "Leading WebGL engine development for architectural tours." },
-            { role: "Senior Graphics Dev", company: "Nexus Engine", years: "2018 - 2021", desc: "Built shader pipelines and physical light baking tools." }
-        ]
+
+desc: "A passionate Software Developer focused on creating clean, efficient, and innovative digital solutions.",
+
+experience: [
+    {
+        role: "Intern",
+        company: "FlyRank",
+        years: "2026 - Present",
+        desc: "Gaining practical experience through real-world software projects."
+    },
+    {
+        role: "Junior Developer",
+        company: "DIU Connect",
+        years: "2024",
+        desc: "Worked on software projects and was hired after completing a 6-month internship."
+    }
+]
     },
     102: {
-        title: "Featured Works",
+        title: "Project & Featured Works",
         items: [
-            { name: "OCTA", desc: "Organized Cyber Threat Alliance platform for threat intelligence and cyber security collaboration.", link: "#" },
+            { name: "OCTA", desc: "Organized Cyber Threat Alliance platform for threat intelligence and cyber security collaboration.", link: "Octa Poster.pdf" },
             { name: "Smart Parking System", desc: "Automated parking management using Arduino, IR sensors, and servo motor.", link: "#" },
             { name: "Alert Rader System", desc: "Real-time object detection and radar visualization using Arduino and Processing.", link: "#" },
-            { name: "3D Portfolio", desc: "Interactive 3D portfolio with animations, smooth transitions, and responsive design.", link: "#" }
+            { name: "3D Portfolio", desc: "Interactive 3D portfolio with animations, smooth transitions, and responsive design.", link: "Usama.pdf" }
         ]
     },
   103: {
@@ -1129,41 +1141,156 @@ function showModal(doorId) {
                     </div>
                 </div>
             `;
-        } else if (doorId === "105"){
-            const mapUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(info.location)}`;
-            modalBody.innerHTML = `
-                <div style="display: flex; gap: 20px; flex-wrap: wrap; align-items: stretch;">
-                    <div style="flex: 1; min-width: 280px; border: 1px solid rgba(212, 175, 55, 0.3); border-radius: 8px; padding: 20px; background: rgba(0, 0, 0, 0.2); display: flex; flex-direction: column; justify-content: space-between; gap: 20px;">
-                        <div style="display: flex; flex-direction: column; gap: 16px; color: #f2e3c6; font-size: 0.95rem;">
-                            <div style="display: flex; align-items: flex-start; gap: 12px;">
-                                <i class="fa-regular fa-envelope" style="color: #d4af37; font-size: 1.1rem; margin-top: 3px;"></i>
-                                <div style="display: flex; flex-direction: column; gap: 2px;">
-                                    <strong style="color: #ffffff; font-size: 0.9rem;">Email:</strong>
-                                    <span style="color: #d4d4d4; word-break: break-all;">${info.email}</span>
-                                </div>
-                            </div>
-                            <div style="display: flex; align-items: center; gap: 12px;">
-                                <i class="fa-solid fa-phone" style="color: #d4af37; font-size: 1rem;"></i>
-                                <div style="display: flex; align-items: center; gap: 6px;">
-                                    <strong style="color: #ffffff; font-size: 0.9rem;">Phone:</strong>
-                                    <span style="color: #d4d4d4;">${info.phone}</span>
-                                </div>
-                            </div>
-                            <div style="display: flex; flex-direction: column; gap: 8px;">
-                                <div style="display: flex; align-items: center; gap: 12px;">
-                                    <i class="fa-solid fa-location-dot" style="color: #d4af37; font-size: 1.1rem;"></i>
-                                    <strong style="color: #ffffff; font-size: 0.9rem;">Location:</strong>
-                                </div>
-                                <a href="${mapUrl}" target="_blank" style="display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; background: rgba(212, 175, 55, 0.08); border: 1px solid rgba(212, 175, 55, 0.4); border-radius: 6px; color: #f2e3c6; text-decoration: none;">
-                                    <span style="font-size: 0.88rem; font-weight: 500; color: #e5e5e5;">${info.location}</span>
-                                    <span style="color: #d4af37; font-size: 0.85rem; font-weight: bold;">Map <i class="fa-solid fa-arrow-up-right-from-square"></i></span>
-                                </a>
-                            </div>
+        } else if (doorId === "105") {
+    const mapUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(info.location)}`;
+    
+    modalBody.innerHTML = `
+        <div style="display: flex; gap: 20px; flex-wrap: wrap; align-items: stretch;">
+            <div style="flex: 1; min-width: 280px; border: 1px solid rgba(212, 175, 55, 0.3); border-radius: 8px; padding: 20px; background: rgba(0, 0, 0, 0.2); display: flex; flex-direction: column; justify-content: space-between; gap: 20px;">
+                
+                <div style="display: flex; flex-direction: column; gap: 16px; color: #f2e3c6; font-size: 0.95rem;">
+                    
+                    <!-- Email -->
+                    <div style="display: flex; align-items: flex-start; gap: 12px;">
+                        <i class="fa-regular fa-envelope" style="color: #d4af37; font-size: 1.1rem; margin-top: 3px;"></i>
+                        
+                        <div style="display: flex; flex-direction: column; gap: 8px; width: 100%;">
+                            <strong style="color: #ffffff; font-size: 0.9rem;">Email:</strong>
+                            
+                            <a href="mailto:${info.email}" 
+                               style="color: #d4d4d4; text-decoration: none; word-break: break-all;">
+                                ${info.email}
+                            </a>
+
+                            <!-- Send Email Button -->
+                            <a href="mailto:${info.email}?subject=Contact%20from%20Your%20Portfolio"
+                               style="
+                                   display: inline-flex;
+                                   align-items: center;
+                                   justify-content: center;
+                                   gap: 8px;
+                                   padding: 10px 14px;
+                                   background: rgba(212, 175, 55, 0.08);
+                                   border: 1px solid rgba(212, 175, 55, 0.4);
+                                   border-radius: 6px;
+                                   color: #d4af37;
+                                   text-decoration: none;
+                                   font-size: 0.85rem;
+                                   font-weight: 600;
+                                   transition: 0.3s ease;
+                               ">
+                                <i class="fa-solid fa-paper-plane"></i>
+                                Send me an Email
+                            </a>
                         </div>
                     </div>
+
+                    <!-- Phone -->
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <i class="fa-solid fa-phone" style="color: #d4af37; font-size: 1rem;"></i>
+                        <div style="display: flex; align-items: center; gap: 6px;">
+                            <strong style="color: #ffffff; font-size: 0.9rem;">Phone:</strong>
+                            <a href="tel:${info.phone}" style="color: #d4d4d4; text-decoration: none;">
+                                ${info.phone}
+                            </a>
+                        </div>
+                    </div>
+
+                    <!-- Location -->
+                    <div style="display: flex; flex-direction: column; gap: 8px;">
+                        <div style="display: flex; align-items: center; gap: 12px;">
+                            <i class="fa-solid fa-location-dot" style="color: #d4af37; font-size: 1.1rem;"></i>
+                            <strong style="color: #ffffff; font-size: 0.9rem;">Location:</strong>
+                        </div>
+                        
+                        <a href="${mapUrl}" 
+                           target="_blank" 
+                           style="
+                               display: flex;
+                               align-items: center;
+                               justify-content: space-between;
+                               padding: 10px 14px;
+                               background: rgba(212, 175, 55, 0.08);
+                               border: 1px solid rgba(212, 175, 55, 0.4);
+                               border-radius: 6px;
+                               color: #f2e3c6;
+                               text-decoration: none;
+                           ">
+                            <span style="font-size: 0.88rem; font-weight: 500; color: #e5e5e5;">
+                                ${info.location}
+                            </span>
+                            
+                            <span style="color: #d4af37; font-size: 0.85rem; font-weight: bold;">
+                                Map <i class="fa-solid fa-arrow-up-right-from-square"></i>
+                            </span>
+                        </a>
+                    </div>
                 </div>
-            `;
-        }
+
+                <!-- Social Media Links Area -->
+                <div style="
+                    display: flex;
+                    flex-direction: column;
+                    gap: 10px;
+                    border-top: 1px solid rgba(212, 175, 55, 0.2);
+                    padding-top: 15px;
+                ">
+                    <strong style="color: #ffffff; font-size: 0.9rem;">
+                        Connect with me:
+                    </strong>
+                    
+                    <div style="
+                        display: flex;
+                        gap: 12px;
+                        flex-wrap: wrap;
+                        align-items: center;
+                    ">
+                        ${info.facebook ? `
+                            <a href="${info.facebook}" 
+                               target="_blank" 
+                               style="color: #d4af37; font-size: 1.2rem; transition: 0.3s;">
+                                <i class="fa-brands fa-facebook"></i>
+                            </a>
+                        ` : ''}
+
+                        ${info.whatsapp ? `
+                            <a href="${info.whatsapp}" 
+                               target="_blank" 
+                               style="color: #d4af37; font-size: 1.2rem; transition: 0.3s;">
+                                <i class="fa-brands fa-whatsapp"></i>
+                            </a>
+                        ` : ''}
+
+                        ${info.github ? `
+                            <a href="${info.github}" 
+                               target="_blank" 
+                               style="color: #d4af37; font-size: 1.2rem; transition: 0.3s;">
+                                <i class="fa-brands fa-github"></i>
+                            </a>
+                        ` : ''}
+
+                        ${info.linkedin ? `
+                            <a href="${info.linkedin}" 
+                               target="_blank" 
+                               style="color: #d4af37; font-size: 1.2rem; transition: 0.3s;">
+                                <i class="fa-brands fa-linkedin"></i>
+                            </a>
+                        ` : ''}
+
+                        ${info.discord ? `
+                            <a href="${info.discord}" 
+                               target="_blank" 
+                               style="color: #d4af37; font-size: 1.2rem; transition: 0.3s;">
+                                <i class="fa-brands fa-discord"></i>
+                            </a>
+                        ` : ''}
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    `;
+}
     }
     modal.classList.add('active');
 }
